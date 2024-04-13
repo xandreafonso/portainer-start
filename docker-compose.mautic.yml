@@ -4,6 +4,11 @@ x-mautic-volumes:
   &mautic-volumes
   - mautic-html:/var/www/html
   - mautic-cron:/opt/mautic/cron
+  # - ./mautic/config:/var/www/html/config:z
+  # - ./mautic/logs:/var/www/html/var/logs:z
+  # - ./mautic/media/files:/var/www/html/docroot/media/files:z
+  # - ./mautic/media/images:/var/www/html/docroot/media/images:z
+  # - ./cron:/opt/mautic/cron:z
 
 services:
   mautic-mysql:
