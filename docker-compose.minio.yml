@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    container_name: minio
+    command: server /data --address ":9000" --console-address ":9001"
+    networks:
+      - traefik-public
+    environment:
+      - MINIO_ROOT_USER=adm
+      - MINIO_ROOT_PASSWORD=12345678
+      - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
+      # - MINIO_SERVER_URL=http://minio-api.localhost
+    ports:
+      # Comento SERVER_URL e Libero a porta 9000 por causa disso:
+      # Get "http://minio-api.localhost/bucketname/?location=": dial tcp: lookup minio-api.localhost on 127.0.0.11:53: no such host
+      # Imagino que isso seja porque estou rodando localmente e o container não enxerga esse nome minio-api.localhost
+      # Pra causar o erro, rode o compose assim, selecione um arquivo no bucket, clique em "share" e depois descomente o MINIO_SERVER_URL
+      # Todo: será que a minha aplicação socialmedia-app conseguiria usar a api pelo nome minio-api.localhost? Testar.
+      - 9000:9000 
+    volumes:
+      - minio-data:/data
+    labels:
+      - traefik.enable=true
+      
+      # API
+      - traefik.http.routers.minio-api.rule=Host(`minio-api.localhost`)
+      # - traefik.http.routers.minio-api.entrypoints=websecure
+      - traefik.http.routers.minio-api.entrypoints=web
+      # - traefik.http.routers.minio-api.tls.certresolver=letsencrypt-resolver
+      # - traefik.http.routers.minio-api.tls=true
+      - traefik.http.routers.minio-api.service=minio-api
+      - traefik.http.services.minio-api.loadbalancer.server.port=9000
+      
+      # Console
+      - traefik.http.routers.minio-console.rule=Host(`minio-console.localhost`)
+      # - traefik.http.routers.minio-console.entrypoints=websecure
+      - traefik.http.routers.minio-console.entrypoints=web
+      # - traefik.http.routers.minio-console.tls.certresolver=letsencrypt-resolver
+      # - traefik.http.routers.minio-console.tls=true
+      - traefik.http.routers.minio-console.service=minio-console
+      - traefik.http.services.minio-console.loadbalancer.server.port=9001
+
+volumes:
+  minio-data:
+    name: minio-data
+
+networks:
+  traefik-public:
+    external: true

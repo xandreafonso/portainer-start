@@ -1,0 +1,71 @@
+version: "3.3"
+
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    networks:
+      - traefik-public        
+    restart: always
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.insecure=true
+      - --api.dashboard=true
+      - --providers.docker
+      - --log.level=ERROR
+      # - --certificatesresolvers.letsencrypt-resolver.acme.email=afonsoaaf@gmail.com
+      # - --certificatesresolvers.letsencrypt-resolver.acme.httpchallenge=true
+      # - --certificatesresolvers.letsencrypt-resolver.acme.httpchallenge.entrypoint=web
+      # - --certificatesresolvers.letsencrypt-resolver.acme.storage=/traefik/files/acme.json
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-files:/traefik/files
+    labels:
+      - traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)
+      # - traefik.http.routers.http-catchall.entrypoints=websecure
+      - traefik.http.routers.http-catchall.entrypoints=web
+      # - traefik.http.routers.http-catchall.middlewares=redirect-to-https
+      # - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.localhost`)
+      # - traefik.http.routers.traefik-dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik-dashboard.entrypoints=web
+      # - traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt-resolver
+      - traefik.http.routers.traefik-dashboard.service=api@internal
+      - traefik.http.middlewares.traefik-auth.basicauth.users=alexandreafonso:apr17n63z19sx43TtM6LFJ0pURykhF3aGLi.1
+      - traefik.http.routers.traefik-dashboard.middlewares=traefik-auth
+
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    networks:
+      - traefik-public 
+    restart: always
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    labels:
+      - traefik.enable=true
+      
+      # Frontend
+      - traefik.http.routers.portainer-frontend.rule=Host(`portainer-adm.localhost`)
+      # - traefik.http.routers.portainer-frontend.entrypoints=websecure
+      - traefik.http.routers.portainer-frontend.entrypoints=web
+      # - traefik.http.routers.portainer-frontend.tls.certresolver=letsencrypt-resolver
+      - traefik.http.services.portainer-frontend.loadbalancer.server.port=9000
+      - traefik.http.routers.portainer-frontend.service=portainer-frontend
+
+volumes:
+  traefik-files:
+    name: traefik-files
+  portainer-data:
+    name: portainer-data
+
+networks:
+  traefik-public:
+    name: traefik-public
