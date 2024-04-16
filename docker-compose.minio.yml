@@ -6,7 +6,7 @@ services:
     container_name: minio
     command: server /data --address ":9000" --console-address ":9001"
     networks:
-      - traefik-public
+      - traefik-net
     environment:
       - MINIO_ROOT_USER=adm
       - MINIO_ROOT_PASSWORD=12345678
@@ -47,5 +47,5 @@ volumes:
     name: minio-data
 
 networks:
-  traefik-public:
+  traefik-net:
     external: true

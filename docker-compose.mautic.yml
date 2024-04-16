@@ -1,14 +1,12 @@
-version: '3'
+version: '3.8'
 
 x-mautic-volumes:
   &mautic-volumes
-  - mautic-html:/var/www/html
-  - mautic-cron:/opt/mautic/cron
-  # - ./mautic/config:/var/www/html/config:z
-  # - ./mautic/logs:/var/www/html/var/logs:z
-  # - ./mautic/media/files:/var/www/html/docroot/media/files:z
-  # - ./mautic/media/images:/var/www/html/docroot/media/images:z
-  # - ./cron:/opt/mautic/cron:z
+  - /opt/mautic/docker/var/www/html/config:/var/www/html/config
+  - /opt/mautic/docker/var/www/html/var/logs:/var/www/html/var/logs
+  - /opt/mautic/docker/var/www/html/docroot/media/files:/var/www/html/docroot/media/files
+  - /opt/mautic/docker/var/www/html/docroot/media/images:/var/www/html/docroot/media/images
+  - /opt/mautic/docker/opt/mautic/cron:/opt/mautic/cron
 
 services:
   mautic-mysql:
@@ -17,26 +15,26 @@ services:
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=mautic
       - MYSQL_USER=mautic
-      - MYSQL_PASSWORD=mautic
-    volumes: 
+      - MYSQL_PASSWORD=mauticpwd
+    volumes:
       - mautic-mysql-data:/var/lib/mysql
     healthcheck:
-      test: mysqladmin --user=mautic --password=mautic ping
+      test: mysqladmin --user=mautic --password=mauticpwd ping
       start_period: 5s
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - traefik-public
+      - traefik-net
 
   mautic-rabbitmq:
     image: rabbitmq:3
     environment:
       - RABBITMQ_DEFAULT_VHOST=mautic
-    volumes: 
+    volumes:
       - mautic-rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - traefik-public
+      - traefik-net
 
   mautic-web:
     image: mautic/mautic:5-apache
@@ -49,7 +47,7 @@ services:
       - MAUTIC_DB_PORT=3306
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
-      - MAUTIC_DB_PASSWORD=mautic
+      - MAUTIC_DB_PASSWORD=mauticpwd
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -63,7 +61,7 @@ services:
       mautic-mysql:
         condition: service_healthy
     networks:
-      - traefik-public
+      - traefik-net
     labels:
       - traefik.enable=true
       - traefik.http.routers.mautic-web.rule=Host(`mautic-web.localhost`)
@@ -84,7 +82,7 @@ services:
       - MAUTIC_DB_PORT=3306
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
-      - MAUTIC_DB_PASSWORD=mautic
+      - MAUTIC_DB_PASSWORD=mauticpwd
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -92,19 +90,19 @@ services:
       mautic-web:
         condition: service_healthy
     networks:
-      - traefik-public
+      - traefik-net
 
   mautic-worker:
     image: mautic/mautic:5-apache
     volumes: *mautic-volumes
     environment:
       - DOCKER_MAUTIC_ROLE=mautic_worker
-    
+
       - MAUTIC_DB_HOST=mautic-mysql
       - MAUTIC_DB_PORT=3306
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
-      - MAUTIC_DB_PASSWORD=mautic
+      - MAUTIC_DB_PASSWORD=mauticpwd
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -112,14 +110,14 @@ services:
       mautic-web:
         condition: service_healthy
     networks:
-      - traefik-public
+      - traefik-net
 
 volumes:
-  mautic-html:
-  mautic-cron:
+  # mautic-html:
+  # mautic-cron:
   mautic-mysql-data:
   mautic-rabbitmq-data:
 
 networks:
-  traefik-public:
+  traefik-net:
     external: true
