@@ -2,11 +2,11 @@ version: '3.8'
 
 x-mautic-volumes:
   &mautic-volumes
-  - /opt/mautic/docker/var/www/html/config:/var/www/html/config
-  - /opt/mautic/docker/var/www/html/var/logs:/var/www/html/var/logs
-  - /opt/mautic/docker/var/www/html/docroot/media/files:/var/www/html/docroot/media/files
-  - /opt/mautic/docker/var/www/html/docroot/media/images:/var/www/html/docroot/media/images
-  - /opt/mautic/docker/opt/mautic/cron:/opt/mautic/cron
+  - mautic-html-config:/var/www/html/config
+  - mautic-html-logs:/var/www/html/var/logs
+  - mautic-media-files:/var/www/html/docroot/media/files
+  - mautic-media-images:/var/www/html/docroot/media/images
+  - mautic-cron:/opt/mautic/cron
 
 services:
   mautic-mysql:
@@ -48,6 +48,7 @@ services:
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
       - MAUTIC_DB_PASSWORD=mauticpwd
+      - PHP_INI_VALUE_DATE_TIMEZONE=America/Sao_Paulo
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -83,6 +84,7 @@ services:
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
       - MAUTIC_DB_PASSWORD=mauticpwd
+      - PHP_INI_VALUE_DATE_TIMEZONE=America/Sao_Paulo
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -103,6 +105,7 @@ services:
       - MAUTIC_DB_DATABASE=mautic
       - MAUTIC_DB_USER=mautic
       - MAUTIC_DB_PASSWORD=mauticpwd
+      - PHP_INI_VALUE_DATE_TIMEZONE=America/Sao_Paulo
 
       - MAUTIC_MESSENGER_DSN_EMAIL=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
       - MAUTIC_MESSENGER_DSN_HIT=amqp://guest:guest@mautic-rabbitmq:5672/mautic/messages
@@ -113,8 +116,11 @@ services:
       - traefik-net
 
 volumes:
-  # mautic-html:
-  # mautic-cron:
+  mautic-html-config:
+  mautic-html-logs:
+  mautic-media-files:
+  mautic-media-images:
+  mautic-cron:
   mautic-mysql-data:
   mautic-rabbitmq-data:
 
