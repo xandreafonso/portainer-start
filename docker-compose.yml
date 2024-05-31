@@ -8,13 +8,14 @@ services:
       - traefik-net        
     restart: always
     command:
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
+      - --providers.docker=true
       - --api.insecure=true
       - --api.dashboard=true
-      - --providers.docker
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
       - --log.level=ERROR
       # - --certificatesresolvers.letsencrypt-resolver.acme.email=afonsoaaf@gmail.com
+      # - --certificatesresolvers.letsencrypt-resolver.acme.tlschallenge=true
       # - --certificatesresolvers.letsencrypt-resolver.acme.httpchallenge=true
       # - --certificatesresolvers.letsencrypt-resolver.acme.httpchallenge.entrypoint=web
       # - --certificatesresolvers.letsencrypt-resolver.acme.storage=/traefik/files/acme.json
@@ -36,7 +37,7 @@ services:
       - traefik.http.routers.traefik-dashboard.entrypoints=web
       # - traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt-resolver
       - traefik.http.routers.traefik-dashboard.service=api@internal
-      - traefik.http.middlewares.traefik-auth.basicauth.users=alexandreafonso:apr17n63z19sx43TtM6LFJ0pURykhF3aGLi.1
+      - traefik.http.middlewares.traefik-auth.basicauth.users=traefik:$2y$10$3M346AmM3THPammcuvWY1OmTWkv342wQT62rVuJHAMU.AOV05lMMC # Tr@3f1kW3b23Ve!
       - traefik.http.routers.traefik-dashboard.middlewares=traefik-auth
 
   portainer:
