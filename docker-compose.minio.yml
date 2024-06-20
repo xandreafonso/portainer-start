@@ -7,24 +7,11 @@ services:
     command: server /data --address ":9000" --console-address ":9001"
     networks:
       - traefik-net
-      # traefik-net:
-      #   aliases:
-      #     - minio-api.localhost
     environment:
       - MINIO_ROOT_USER=adm
       - MINIO_ROOT_PASSWORD=12345678
       - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
       #- MINIO_SERVER_URL=http://minio-api.localhost
-    #ports:
-      # Comento SERVER_URL e Libero a porta 9000 por causa disso:
-      # Get "http://minio-api.localhost/bucketname/?location=": dial tcp: lookup minio-api.localhost on 127.0.0.11:53: no such host
-      # Imagino que isso seja porque estou rodando localmente e o container não enxerga esse nome minio-api.localhost
-      # Pra causar o erro, rode o compose assim, selecione um arquivo no bucket, clique em "share" e depois descomente o MINIO_SERVER_URL
-      # Todo: será que a minha aplicação socialmedia-app conseguiria usar a api pelo nome minio-api.localhost? Testar.
-      # UPDATE 1: eu fiz um teste de descobrir o IP do WSL dentro da rede criada pela stack e, dentro do /etc/hosts do container do minio vc coloca "IP minio-api.localhost"
-      # UPDATE 2: depois de testes aqui, me parece que o MINIO corrigiu o problema que eu estava tendo. Não precisa de porta e nem do update 1.
-      #- 9000:9000
-      #- 9001:9001
     volumes:
       - minio-data:/data
     labels:
@@ -32,21 +19,17 @@ services:
       
       # API
       - traefik.http.routers.minio-api.rule=Host(`minio-api.localhost`)
-      # - traefik.http.routers.minio-api.entrypoints=websecure
-      - traefik.http.routers.minio-api.entrypoints=web
-      # - traefik.http.routers.minio-api.tls.certresolver=letsencrypt-resolver
-      # - traefik.http.routers.minio-api.tls=true
-      - traefik.http.routers.minio-api.service=minio-api
+      - traefik.http.routers.minio-api.entrypoints=web #websecure
       - traefik.http.services.minio-api.loadbalancer.server.port=9000
-      
+      - traefik.http.routers.minio-api.service=minio-api
+      # - traefik.http.routers.minio-api.tls.certresolver=letsencrypt-resolver      
+
       # Console
       - traefik.http.routers.minio-console.rule=Host(`minio-console.localhost`)
-      # - traefik.http.routers.minio-console.entrypoints=websecure
-      - traefik.http.routers.minio-console.entrypoints=web
-      # - traefik.http.routers.minio-console.tls.certresolver=letsencrypt-resolver
-      # - traefik.http.routers.minio-console.tls=true
-      - traefik.http.routers.minio-console.service=minio-console
+      - traefik.http.routers.minio-console.entrypoints=web #websecure
       - traefik.http.services.minio-console.loadbalancer.server.port=9001
+      - traefik.http.routers.minio-console.service=minio-console
+      # - traefik.http.routers.minio-console.tls.certresolver=letsencrypt-resolver
 
 volumes:
   minio-data:

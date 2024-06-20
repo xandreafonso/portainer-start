@@ -64,14 +64,10 @@ services:
     networks:
       - traefik-net
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.mautic-web.rule=Host(`mautic-web.localhost`)
-      # - traefik.http.routers.mautic-web.entrypoints=websecure
-      - traefik.http.routers.mautic-web.entrypoints=web
-      # - traefik.http.routers.mautic-web.tls.certresolver=letsencrypt-resolver
-      # - traefik.http.routers.mautic-web.tls=true
-      - traefik.http.routers.mautic-web.service=mautic-web
-      - traefik.http.services.mautic-web.loadbalancer.server.port=80
+      - traefik.enable=true      
+      - traefik.http.routers.botapp.rule=Host(`mautic.localhost`)
+      - traefik.http.routers.botapp.entrypoints=web #websecure
+      # - traefik.http.routers.botapp.tls.certresolver=letsencrypt-resolver      
 
   mautic-cron:
     image: mautic/mautic:5-apache

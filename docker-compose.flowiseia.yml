@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  flowise-db:
+    image: postgres
+    networks:
+      - traefik-net
+    environment:
+      POSTGRES_PASSWORD: "123456"
+      POSTGRES_DB: flowise
+    volumes:
+      - flowise-db-postgres:/var/lib/postgresql/data
+
+  flowise:
+    image: flowiseai/flowise
+    restart: always
+    entrypoint: /bin/sh -c "sleep 3; flowise start"
+    networks:
+      - traefik-net
+    environment:
+      DATABASE_TYPE: postgres
+      DATABASE_NAME: flowise
+      DATABASE_HOST: flowise-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: 123456
+      
+      FLOWISE_USERNAME: adm
+      FLOWISE_PASSWORD: 123456
+      FLOWISE_SECRETKEY_OVERWRITE: mmNXsF2ghuanN38mMC1j3NQjFpXA5nONI
+      
+      DEBUG: "true"
+      LOG_LEVEL: debug
+    volumes:
+      - flowise-data:/root/.flowise
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.flowise.rule=Host(`flowise.localhost`)
+      - traefik.http.routers.flowise.entrypoints=web #websecure
+      - traefik.http.services.flowise.loadbalancer.server.port=3000
+      # - traefik.http.routers.flowise.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  flowise-data:
+    name: flowise-data
+  flowise-db-postgres:
+    name: flowise-db-postgres
+
+networks:
+  traefik-net:
+    external: true
