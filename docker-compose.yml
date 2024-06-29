@@ -18,6 +18,10 @@ services:
       # - --certificatesresolvers.letsencrypt-resolver.acme.email=afonsoaaf@gmail.com
       # - --certificatesresolvers.letsencrypt-resolver.acme.storage=/traefik/files/acme.json
       # - --certificatesresolvers.letsencrypt-resolver.acme.tlschallenge=true
+
+      # - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      # - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      
     ports:
       - 80:80
       - 443:443
