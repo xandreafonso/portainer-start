@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  langflow-db:
+    image: postgres:16
+    networks:
+      - traefik-net
+    volumes:
+      - langflow-db-postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: langflow
+      POSTGRES_PASSWORD: 123456
+      
+  langflow:
+    image: langflowai/langflow:latest
+    user: root
+    networks:
+      - traefik-net
+    depends_on:
+      - langflow-db
+    volumes:
+      - langflow-data:/var/lib/langflow
+    environment:
+      - LANGFLOW_DATABASE_URL=postgresql://postgres:123456@langflow-db:5432/langflow
+      - LANGFLOW_CONFIG_DIR=/var/lib/langflow
+      - LANGFLOW_SUPERUSER=afonso
+      - LANGFLOW_SUPERUSER_PASSWORD=123
+      - LANGFLOW_NEW_USER_IS_ACTIVE=true
+      - LANGFLOW_AUTO_LOGIN=false
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.langflow.rule=Host(`langflow.localhost`)
+      - traefik.http.routers.langflow.entrypoints=web,websecure
+      - traefik.http.services.langflow.loadbalancer.server.port=7860
+      # - traefik.http.routers.flowise.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  langflow-db-postgres:
+    name: langflow-db-postgres
+  langflow-data:
+    name: langflow-data
+
+networks:
+  traefik-net:
+    external: true
