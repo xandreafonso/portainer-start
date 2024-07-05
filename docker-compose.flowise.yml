@@ -37,7 +37,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.flowise.rule=Host(`flowise.localhost`)
-      - traefik.http.routers.flowise.entrypoints=web #websecure
+      - traefik.http.routers.flowise.entrypoints=web,websecure
       - traefik.http.services.flowise.loadbalancer.server.port=3000
       # - traefik.http.routers.flowise.tls.certresolver=letsencrypt-resolver
 
