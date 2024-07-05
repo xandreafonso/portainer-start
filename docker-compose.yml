@@ -38,7 +38,7 @@ services:
       - traefik.http.middlewares.traefik-auth.basicauth.users=traefik:e10adc3949ba59abbe56e057f20f883e
 
       - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
-      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.entrypoints=web,websecure
 
       # - traefik.http.routers.traefik.tls.certresolver=letsencrypt-resolver
 
@@ -56,7 +56,7 @@ services:
       - traefik.enable=true
       
       - traefik.http.routers.portainer.rule=Host(`portainer.localhost`)
-      - traefik.http.routers.portainer.entrypoints=web
+      - traefik.http.routers.portainer.entrypoints=web,websecure
       - traefik.http.services.portainer.loadbalancer.server.port=9000
       
       # - traefik.http.routers.portainer.tls.certresolver=letsencrypt-resolver

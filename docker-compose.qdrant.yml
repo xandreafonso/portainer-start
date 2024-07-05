@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db-qdrant:
+    image: qdrant/qdrant
+    networks:
+      - traefik-net
+    ports:
+      - 6333:6333
+    environment:
+      - QDRANT__SERVICE__API_KEY=93c193d2-5b52-4cd4-9e2c-b080937b79W4
+    volumes:
+      - db-qdrant-data:/qdrant/storage
+
+volumes:
+  db-qdrant-data:
+    name: db-qdrant-data
+
+networks:
+  traefik-net:
+    external: true

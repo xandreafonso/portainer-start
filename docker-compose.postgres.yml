@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db-postgres:
+    image: postgres
+    networks:
+      - traefik-net
+    restart: always
+    volumes:
+      - db-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=meubanco
+      - POSTGRES_PASSWORD=minhasenha
+
+volumes:
+  db-postgres-data:
+    name: db-postgres-data
+
+networks:
+  traefik-net:
+    external: true
