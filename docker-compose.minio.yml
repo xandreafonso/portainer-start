@@ -7,13 +7,13 @@ services:
     command: server /data --address ":9000" --console-address ":9001"
     networks:
       - traefik-net
-    environment:
-      - MINIO_ROOT_USER=adm
-      - MINIO_ROOT_PASSWORD=12345678
-      - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
-      #- MINIO_SERVER_URL=http://minio-api.localhost
     volumes:
       - minio-data:/data
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=12345678
+      - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
+      # - MINIO_SERVER_URL=http://minio-api.localhost
     labels:
       - traefik.enable=true
       
@@ -30,6 +30,21 @@ services:
       - traefik.http.services.minio-console.loadbalancer.server.port=9001
       - traefik.http.routers.minio-console.service=minio-console
       # - traefik.http.routers.minio-console.tls.certresolver=letsencrypt-resolver
+
+  createbuckets:
+    image: quay.io/minio/mc
+    networks:
+      - traefik-net
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc config host add minio http://minio:9000 admin 12345678;
+      /usr/bin/mc mb minio/meubucket;
+      /usr/bin/mc anonymous set public minio/meubucket/public;
+      exit 0;
+      "
 
 volumes:
   minio-data:

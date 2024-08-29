@@ -1,0 +1,93 @@
+version: '3.3'
+
+services:
+  typebot-db:
+    image: postgres:14-alpine
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - typebot-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=typebot
+      - POSTGRES_PASSWORD=typebot
+
+  typebot-builder:
+    image: baptistearno/typebot-builder:latest
+    restart: always
+    networks:
+      - traefik-net
+    depends_on:
+      - typebot-db
+    environment:
+      - DATABASE_URL=postgresql://postgres:typebot@typebot-db:5432/typebot
+      - ENCRYPTION_SECRET=${TYPEBOT_ENCRYPTION_SECRET}
+
+      - NEXTAUTH_URL=http://typebot-builder.localhost
+      - NEXT_PUBLIC_VIEWER_URL=http://typebot-viewer.localhost
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3000
+
+      - ADMIN_EMAIL=afonsoaaf@gmail.com
+      - DISABLE_SIGNUP=false
+
+      - SMTP_HOST=smtp.sendgrid.net
+      - SMTP_USERNAME=apikey
+      - SMTP_PASSWORD=${SENDGRID_API_KEY}
+      - SMTP_PORT=465
+      - SMTP_SECURE=true
+      - NEXT_PUBLIC_SMTP_FROM="Alexandre Afonso <contato@alexandreafonso.com.br>"
+
+      - S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${AWS_S3_SECRET_KEY}
+      - S3_BUCKET=s3.typebot.alexandreafonso.com.br
+      - S3_REGION=us-west-2
+      - S3_ENDPOINT=s3.amazonaws.com
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.typebot-builder.rule=Host(`typebot-builder.localhost`)
+      - traefik.http.routers.typebot-builder.entrypoints=web,websecure
+      - traefik.http.services.typebot-builder.loadbalancer.server.port=3000
+      # - traefik.http.routers.typebot-builder.tls.certresolver=letsencrypt-resolver
+
+  typebot-viewer:
+    image: baptistearno/typebot-viewer:latest
+    restart: always
+    networks:
+      - traefik-net
+    environment:
+      - DATABASE_URL=postgresql://postgres:typebot@typebot-db:5432/typebot
+      - ENCRYPTION_SECRET=${TYPEBOT_ENCRYPTION_SECRET}
+
+      - NEXTAUTH_URL=http://typebot-builder.localhost
+      - NEXT_PUBLIC_VIEWER_URL=http://typebot-viewer.localhost
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3000
+
+      - ADMIN_EMAIL=afonsoaaf@gmail.com
+      - DISABLE_SIGNUP=false
+
+      - SMTP_HOST=smtp.sendgrid.net
+      - SMTP_USERNAME=apikey
+      - SMTP_PASSWORD=${SENDGRID_API_KEY}
+      - SMTP_PORT=465
+      - SMTP_SECURE=true
+      - NEXT_PUBLIC_SMTP_FROM="Alexandre Afonso <contato@alexandreafonso.com.br>"
+
+      - S3_ACCESS_KEY=${AWS_S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${AWS_S3_SECRET_KEY}
+      - S3_BUCKET=s3.typebot.alexandreafonso.com.br
+      - S3_REGION=us-west-2
+      - S3_ENDPOINT=s3.amazonaws.com
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.typebot-viewer.rule=Host(`typebot-viewer.localhost`)
+      - traefik.http.routers.typebot-viewer.entrypoints=web,websecure
+      - traefik.http.services.typebot-viewer.loadbalancer.server.port=3000
+      # - traefik.http.routers.typebot-viewer.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  typebot-db-data:
+    name: typebot-db-data
+
+networks:
+  traefik-net:
+    external: true

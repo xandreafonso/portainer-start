@@ -7,7 +7,7 @@ services:
       - traefik-net
     restart: always
     volumes:
-      - n8n-db-postgres:/var/lib/postgresql/data
+      - n8n-db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=n8n_password
@@ -52,8 +52,8 @@ services:
 volumes:
   n8n-data:
     name: n8n-data
-  n8n-db-postgres:
-    name: n8n-db-postgres
+  n8n-db-data:
+    name: n8n-db-data
 
 networks:
   traefik-net:

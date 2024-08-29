@@ -6,7 +6,7 @@ services:
     networks:
       - traefik-net
     volumes:
-      - langflow-db-postgres:/var/lib/postgresql/data
+      - langflow-db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: langflow
       POSTGRES_PASSWORD: 123456
@@ -32,11 +32,11 @@ services:
       - traefik.http.routers.langflow.rule=Host(`langflow.localhost`)
       - traefik.http.routers.langflow.entrypoints=web,websecure
       - traefik.http.services.langflow.loadbalancer.server.port=7860
-      # - traefik.http.routers.flowise.tls.certresolver=letsencrypt-resolver
+      # - traefik.http.routers.langflow.tls.certresolver=letsencrypt-resolver
 
 volumes:
-  langflow-db-postgres:
-    name: langflow-db-postgres
+  langflow-db-data:
+    name: langflow-db-data
   langflow-data:
     name: langflow-data
 
