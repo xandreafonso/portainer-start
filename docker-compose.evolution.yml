@@ -13,24 +13,6 @@ services:
     volumes:
       - evolution-db-data:/var/lib/postgresql/data
     
-  evolution-pgadmin:
-    image: dpage/pgadmin4:latest
-    restart: always
-    networks:
-      - traefik-net
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=afonsoaaf@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=123456
-    volumes:
-      - evolution-pgadmin-data:/var/lib/pgadmin
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.evolution-pgadmin.rule=Host(`evolution-pgadmin.localhost`)
-      - traefik.http.routers.evolution-pgadmin.entrypoints=web,websecure
-      - traefik.http.services.evolution-pgadmin.loadbalancer.server.port=80
-      - traefik.http.services.evolution-pgadmin.loadbalancer.passHostHeader=true
-      # - traefik.http.routers.evolution-pgadmin.tls.certresolver=letsencrypt-resolver
-
   evolution-rabbitmq:
     image: rabbitmq:management
     restart: always
