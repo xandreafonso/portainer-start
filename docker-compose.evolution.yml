@@ -3,10 +3,10 @@ version: '3.3'
 services:
   evolution-db:
     image: postgres:15
+    restart: always
     networks:
       - traefik-net
     command: ["postgres", "-c", "max_connections=1000"]
-    restart: always
     environment:
       - POSTGRES_DB=evolution
       - POSTGRES_PASSWORD=123456
@@ -15,6 +15,7 @@ services:
     
   evolution-pgadmin:
     image: dpage/pgadmin4:latest
+    restart: always
     networks:
       - traefik-net
     environment:
@@ -32,6 +33,7 @@ services:
 
   evolution-rabbitmq:
     image: rabbitmq:management
+    restart: always
     environment:
       - RABBITMQ_ERLANG_COOKIE=33H2CdkzF5WrnJ4ud6nkUdRTKXvbCHeFjvVL71p
       - RABBITMQ_DEFAULT_VHOST=default
@@ -44,6 +46,7 @@ services:
 
   evolution-db-kv:
     image: redis:latest
+    restart: always
     networks:
       - traefik-net
     command: >
@@ -53,6 +56,7 @@ services:
     
   evolution_v2:
     image: atendai/evolution-api:v2.0.10
+    restart: always
     volumes:
       - evolution_v2-data:/evolution/instances
     networks:

@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.3'
 
 services:
 
@@ -28,6 +28,7 @@ services:
       
   dify-api:
     image: langgenius/dify-api:latest
+    restart: always
     volumes:
       - dify-data:/app/api/storage
     networks:
@@ -96,6 +97,7 @@ services:
 
   dify-worker:
     image: langgenius/dify-api:latest ## Versão do Dify
+    restart: always
     volumes:
       - dify-data:/app/api/storage
     networks:
@@ -136,6 +138,7 @@ services:
 
   dify-web:
     image: langgenius/dify-web:latest # Versão do Dify
+    restart: always
     networks:
       - traefik-net
     environment:
@@ -146,6 +149,7 @@ services:
 
   dify-sandbox:
     image: langgenius/dify-sandbox:latest
+    restart: always
     networks:
       - traefik-net    
     environment:
@@ -153,26 +157,37 @@ services:
       - GIN_MODE=release
       - WORKER_TIMEOUT=15
 
+  dify-nginx-files:
+    image: bitnami/git
+    volumes:
+      - ${SYSTEM_FOLDER:-/opt}:/root/files
+    command: >
+      sh -c "
+        if [ ! -d /root/files/dify-service/dify/docker ]; then
+          mkdir -p /root/files/dify-service &&
+          cd /root/files/dify-service &&
+          git clone https://github.com/langgenius/dify.git &&
+          sed -i 's|http://api|http://dify-api|g' /root/files/dify-service/dify/docker/nginx/conf.d/default.conf.template &&
+          sed -i 's|http://web|http://dify-web|g' /root/files/dify-service/dify/docker/nginx/conf.d/default.conf.template &&
+          echo 'Done git clone!'
+        else
+          echo 'Git clone already got done!'
+        fi
+      "
+
   dify-nginx:
     image: nginx:latest
-    entrypoint: >
-      sh -c "
-      apt-get update &&
-      apt-get install -y git  &&
-      git clone https://github.com/langgenius/dify.git  &&
-
-      mv dify/docker/nginx/nginx.conf.template /etc/nginx/  &&
-      mv dify/docker/nginx/proxy.conf.template /etc/nginx/  &&
-      mv dify/docker/nginx/conf.d/* /etc/nginx/conf.d/  &&
-      mv dify/docker/nginx/docker-entrypoint.sh /  &&
-
-      sed -i 's|http://api|http://dify-api|g' /etc/nginx/conf.d/default.conf.template &&
-      sed -i 's|http://web|http://dify-web|g' /etc/nginx/conf.d/default.conf.template &&
-
-      chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh
-      "
+    restart: always
+    entrypoint: ["sh", "-c", "chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh"]
+    depends_on:
+      dify-nginx-files:
+        condition: service_completed_successfully
     volumes:
-      - dify-nginx-ssl-data:/etc/ssl
+      - ${SYSTEM_FOLDER}/dify-service/dify/docker/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ${SYSTEM_FOLDER}/dify-service/dify/docker/nginx/proxy.conf.template:/etc/nginx/proxy.conf.template
+      - ${SYSTEM_FOLDER}/dify-service/dify/docker/nginx/conf.d:/etc/nginx/conf.d
+      - ${SYSTEM_FOLDER}/dify-service/dify/docker/nginx/docker-entrypoint.sh:/docker-entrypoint.sh
+      - ${SYSTEM_FOLDER}/dify-service/dify/docker/nginx/ssl:/etc/ssl
     networks:
       - traefik-net
     environment:
@@ -196,6 +211,7 @@ services:
 
   dify-weaviate:
     image: semitechnologies/weaviate:1.19.0
+    restart: always
     volumes:
       - dify-weaviate-data:/var/lib/weaviate
     environment:
@@ -224,8 +240,6 @@ volumes:
     name: dify-db-data
   dify-db-kv-data:
     name: dify-db-kv-data
-  dify-nginx-ssl-data:
-    name: dify-nginx-ssl-data
 
 networks:
   traefik-net:

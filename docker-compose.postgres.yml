@@ -3,9 +3,9 @@ version: '3.8'
 services:
   db-postgres:
     image: postgres
+    restart: always
     networks:
       - traefik-net
-    restart: always
     volumes:
       - db-postgres-data:/var/lib/postgresql/data
     environment:

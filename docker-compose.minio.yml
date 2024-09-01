@@ -3,7 +3,7 @@ version: "3.3"
 services:
   minio:
     image: quay.io/minio/minio
-    container_name: minio
+    restart: always
     command: server /data --address ":9000" --console-address ":9001"
     networks:
       - traefik-net
@@ -41,8 +41,8 @@ services:
       /bin/sh -c "
       sleep 10;
       /usr/bin/mc config host add minio http://minio:9000 admin 12345678;
-      /usr/bin/mc mb minio/meubucket;
-      /usr/bin/mc anonymous set public minio/meubucket/public;
+      /usr/bin/mc mb minio/xandreafonso;
+      /usr/bin/mc anonymous set public minio/xandreafonso/public;
       exit 0;
       "
 

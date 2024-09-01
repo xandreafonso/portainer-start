@@ -3,6 +3,7 @@ version: '3.8'
 services:
   keycloak:
     image: quay.io/keycloak/keycloak
+    restart: always
     networks:
       - traefik-net
     command:

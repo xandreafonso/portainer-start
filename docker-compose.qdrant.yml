@@ -3,6 +3,7 @@ version: '3.8'
 services:
   db-qdrant:
     image: qdrant/qdrant
+    restart: always
     networks:
       - traefik-net
     ports:

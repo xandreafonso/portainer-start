@@ -3,9 +3,9 @@ version: '3.8'
 services:
   n8n-db:
     image: postgres
+    restart: always
     networks:
       - traefik-net
-    restart: always
     volumes:
       - n8n-db-data:/var/lib/postgresql/data
     environment:

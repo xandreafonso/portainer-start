@@ -11,6 +11,7 @@ x-mautic-volumes:
 services:
   mautic-mysql:
     image: mysql:8.0
+    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=mautic
@@ -29,6 +30,7 @@ services:
 
   mautic-rabbitmq:
     image: rabbitmq:3
+    restart: always
     environment:
       - RABBITMQ_DEFAULT_VHOST=mautic
     volumes:
@@ -38,6 +40,7 @@ services:
 
   mautic-web:
     image: mautic/mautic:5-apache
+    restart: always
     volumes: *mautic-volumes
     environment:
       - DOCKER_MAUTIC_LOAD_TEST_DATA=false
@@ -71,6 +74,7 @@ services:
 
   mautic-cron:
     image: mautic/mautic:5-apache
+    restart: always
     volumes: *mautic-volumes
     environment:
       - DOCKER_MAUTIC_ROLE=mautic_cron
@@ -92,6 +96,7 @@ services:
 
   mautic-worker:
     image: mautic/mautic:5-apache
+    restart: always
     volumes: *mautic-volumes
     environment:
       - DOCKER_MAUTIC_ROLE=mautic_worker
