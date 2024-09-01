@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+
+  botpress-db:
+    image: postgres
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - botpress-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=botpress
+      - POSTGRES_PASSWORD=123456
+
+  botpress-db-kv:
+    image: redis
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - botpress-db-kv-data:/data
+    environment:
+      - REDIS_HOST=botpress-db-kv
+      - REDIS_PORT=6379
+      - REDIS_USE_SSL=false
+      - REDIS_DB=0
+
+  botpress:
+    image: botpress/server:latest
+    volumes:
+      - botpress-data:/botpress/data
+    networks:
+      - traefik-net
+    environment:
+      - EXTERNAL_URL=http://botpress.localhost
+      - BP_PRODUCTION=true
+      - DATABASE_URL=postgresql://postgres:123456@botpress-db:5432/botpress
+      - REDIS_URL=redis://botpress-db-kv:6379    
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.botpress.rule=Host(`botpress.localhost`)
+      - traefik.http.routers.botpress.entrypoints=web,websecure
+      - traefik.http.services.botpress.loadbalancer.server.port=3000
+      # - traefik.http.routers.botpress.tls.certresolver=letsencryptresolver
+
+volumes:
+  botpress-data:
+    name: botpress-data
+  botpress-db-data:
+    name: botpress-db-data
+  botpress-db-kv-data:
+    name: botpress-db-kv-data
+
+networks:
+  traefik-net:
+    external: true
+      
