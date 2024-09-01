@@ -1,0 +1,122 @@
+version: "3.8"
+
+x-shared-env: &shared-env
+  RAILS_ENV: production
+  INSTALLATION_ENV: docker
+  INSTALLATION_NAME: xandreafonso
+  RAILS_LOG_TO_STDOUT: "true"
+
+  SECRET_KEY_BASE: 8b5997663af1ce5e5469302b48095e90
+
+  FRONTEND_URL: http://chatwoot.localhost
+  FORCE_SSL: "false"
+  ENABLE_ACCOUNT_SIGNUP: "false"
+  DEFAULT_LOCALE: pt_BR
+  USE_INBOX_AVATAR_FOR_BOT: "true"
+
+  REDIS_URL: redis://chatwoot-db-kv:6379
+  POSTGRES_HOST: chatwoot-db
+  POSTGRES_USERNAME: postgres
+  POSTGRES_PASSWORD: 123456
+  POSTGRES_DATABASE: chatwoot
+
+  ACTIVE_STORAGE_SERVICE: amazon
+  S3_BUCKET_NAME: s3.chatwoot.alexandreafonso.com.br
+  AWS_ACCESS_KEY_ID: ${R2_AWS_S3_ACCESS_KEY}
+  AWS_SECRET_ACCESS_KEY: ${R2_AWS_S3_SECRET_KEY}
+  AWS_REGION: auto
+
+  MAILER_SENDER_EMAIL: Alexandre <eu@alexandreafonso.com.br>
+
+  SMTP_ADDRESS: smtp.sendgrid.net
+  SMTP_AUTHENTICATION: plain
+  SMTP_PORT: 587
+  SMTP_DOMAIN: alexandreafonso.com.br
+  SMTP_USERNAME: apikey
+  SMTP_PASSWORD: ${SENDGRID_API_KEY}
+
+  FB_VERIFY_TOKEN: 
+  FB_APP_SECRET: 
+  FB_APP_ID: 
+
+  GOOGLE_OAUTH_CLIENT_ID: 
+  GOOGLE_OAUTH_CLIENT_SECRET: 
+  GOOGLE_OAUTH_CALLBACK_URL: 
+
+  STRIPE_SECRET_KEY: 
+  STRIPE_WEBHOOK_SECRET: 
+
+  OPENAI_API_KEY: 
+
+services:
+
+  chatwoot-db:
+    image: postgres
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - chatwoot-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chatwoot
+      - POSTGRES_PASSWORD=123456
+
+  chatwoot-db-kv:
+    image: redis
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - chatwoot-db-kv-data:/data
+    environment:
+      - REDIS_HOST=chatwoot-db-kv
+      - REDIS_PORT=6379
+      - REDIS_USE_SSL=false
+      - REDIS_DB=0
+
+  chatwoot: # bundle exec rails db:chatwoot_prepare # https://www.chatwoot.com/docs/self-hosted/deployment/docker
+    image: chatwoot/chatwoot:latest
+    restart: always
+    depends_on:
+      - chatwoot-db
+      - chatwoot-db-kv
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    entrypoint: docker/entrypoints/rails.sh
+    volumes:
+      - chatwoot-data:/app/storage
+    networks:
+      - traefik-net
+    environment:
+      <<: *shared-env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chatwoot.rule=Host(`chatwoot.localhost`)
+      - traefik.http.routers.chatwoot.entrypoints=web,websecure
+      - traefik.http.services.chatwoot.loadbalancer.server.port=3000
+      # - traefik.http.routers.chatwoot.tls.certresolver=letsencryptresolver
+
+  chatwoot-worker:
+    image: chatwoot/chatwoot:latest
+    restart: always
+    depends_on:
+      - chatwoot-db
+      - chatwoot-db-kv
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    volumes:
+      - chatwoot-data:/app/storage
+    networks:
+      - traefik-net
+    environment:
+      <<: *shared-env
+
+volumes:
+  chatwoot-data:
+    name: chatwoot-data
+  chatwoot-db-data:
+    name: chatwoot-db-data
+  chatwoot-db-kv-data:
+    name: chatwoot-db-kv-data
+
+networks:
+  traefik-net:
+    external: true
