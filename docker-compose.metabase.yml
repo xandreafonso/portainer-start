@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+
+  # metabase-db:
+  #   image: postgres
+  #   restart: always
+  #   networks:
+  #     - traefik-net
+  #   volumes:
+  #     - metabase-db-data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=metabase
+  #     - POSTGRES_PASSWORD=123456
+
+  metabase:
+    image: metabase/metabase:latest
+    restart: always
+    networks:
+      - traefik-net
+    # environment:
+    #   - MB_DB_TYPE=postgres
+    #   - MB_DB_DBNAME=metabase
+    #   - MB_DB_USER=postgres
+    #   - MB_DB_PASS=123456
+    #   - MB_DB_PORT=5432
+    #   - MB_DB_HOST=metabase-db
+    volumes:
+      - metabase-data:/metabase-data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.metabase.rule=Host(`metabase.localhost`)
+      - traefik.http.routers.metabase.entrypoints=web,websecure
+      - traefik.http.services.metabase.loadbalancer.server.port=3000
+      # - traefik.http.routers.metabase.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  metabase-data:
+    name: metabase-data
+  # metabase-db-data:
+  #   name: metabase-db-data
+
+networks:
+  traefik-net:
+    external: true
