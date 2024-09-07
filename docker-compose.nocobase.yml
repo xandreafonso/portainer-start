@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+
+  nocobase-db:
+    image: postgres
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - nocobase-db-data:/var/lib/postgresql/data
+    networks:
+      - traefik-net
+
+  nocobase:
+    image: nocobase/nocobase:latest
+    networks:
+      - traefik-net
+    depends_on:
+      - nocobase-db
+    volumes:
+      - nocobase-data:/app/nocobase/storage
+    environment:
+      - APP_KEY=your-secret-key
+      - TZ=America/Sao_Paulo
+      - INIT_APP_LANG=en
+      
+      - INIT_ROOT_EMAIL=admin@nocobase.com
+      - INIT_ROOT_PASSWORD=admin123
+      - INIT_ROOT_NICKNAME="Super Admin"
+
+      - DB_DIALECT=postgres
+      - DB_HOST=nocobase-db
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nocobase.rule=Host(`nocobase.localhost`)
+      - traefik.http.routers.nocobase.entrypoints=web,websecure
+      - traefik.http.services.nocobase.loadbalancer.server.port=80
+      # - traefik.http.routers.nocobase.tls.certresolver=letsencrypt-resolver
+    
+
+volumes:
+  nocobase-db-data:
+    name: nocobase-db-data
+  nocobase-data:
+    name: nocobase-data
+
+networks:
+  traefik-net:
+    external: true
