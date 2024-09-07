@@ -1,0 +1,36 @@
+version: "3"
+
+services:
+  appsmith:
+    image: index.docker.io/appsmith/appsmith-ee
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - appsmith-data:/appsmith-stacks
+    environment:
+      - APPSMITH_SIGNUP_DISABLED=false
+      
+      - APPSMITH_EMAIL_ENABLED=true
+      - APPSMITH_EMAIL_SMTP_HOST=smtp.sendgrid.net
+      - APPSMITH_EMAIL_SMTP_PORT=587
+      - APPSMITH_EMAIL_SMTP_USER=apikey
+      - APPSMITH_EMAIL_SMTP_PASSWORD=${SENDGRID_API_KEY}
+      - APPSMITH_EMAIL_SMTP_AUTH=true
+      - APPSMITH_EMAIL_SMTP_SECURE=true
+      - APPSMITH_EMAIL_SMTP_SKIP_VERIFY=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.appsmith.rule=Host(`appsmith.localhost`)
+      - traefik.http.routers.appsmith.entrypoints=web,websecure
+      - traefik.http.services.appsmith.loadbalancer.server.port=80
+      # - traefik.http.routers.appsmith.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  appsmith-data:
+    name: appsmith-data
+
+networks:
+  traefik-net:
+    external: true
+    
