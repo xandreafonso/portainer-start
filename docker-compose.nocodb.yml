@@ -1,0 +1,68 @@
+version: "3.7"
+
+services: 
+
+  nocodb-db: 
+    image: postgres
+    restart: always
+    networks: 
+      - traefik-net
+    volumes: 
+      - "nocodb-db-data:/var/lib/postgresql/data"
+    environment: 
+      - POSTGRES_DB=nocodb
+      - POSTGRES_PASSWORD=123456
+    healthcheck: 
+      interval: 10s
+      retries: 10
+      test: "pg_isready -U postgres -d nocodb"
+      timeout: 2s
+
+  nocodb: 
+    image: nocodb/nocodb:latest
+    restart: always
+    depends_on: 
+      - nocodb-db
+    networks: 
+      - traefik-net
+    volumes: 
+      - nocodb-data:/usr/app/data
+    environment: 
+      - NC_PUBLIC_URL=http://nocodb.localhost
+      - NC_DISABLE_TELE=true
+
+      - NC_DB=pg://nocodb-db:5432?u=postgres&p=123456&d=nocodb
+
+      - NC_SMTP_FROM=contato@alexandreafonso.com.br
+      - NC_SMTP_HOST=smtp.sendgrid.net
+      - NC_SMTP_USERNAME=apikey
+      - NC_SMTP_PASSWORD=${SENDGRID_API_KEY}
+      - NC_SMTP_PORT=587
+    labels: 
+      - traefik.enable=true
+      - traefik.http.routers.nocodb.rule=Host(`nocodb.localhost`)
+      - traefik.http.routers.nocodb.entrypoints=web,websecure
+      - traefik.http.services.nocodb.loadbalancer.server.port=8080
+      # - traefik.http.routers.nocodb.tls.certresolver=letsencrypt-resolver
+
+  watchtower: 
+    image: containrrr/watchtower
+    restart: always
+    command: "--schedule \"0 5 * * *\" --cleanup --label-enable"
+    networks: 
+      - traefik-net
+    volumes: 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels: 
+      - com.centurylinklabs.watchtower.enable=true
+
+
+volumes: 
+  nocodb-db-data: 
+    name: nocodb-db-data
+  nocodb-data:
+    name: nocodb-data
+
+networks: 
+  traefik-net: 
+    name: traefik-net
