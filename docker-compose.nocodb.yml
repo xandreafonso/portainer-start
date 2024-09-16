@@ -10,13 +10,12 @@ services:
     volumes: 
       - "nocodb-db-data:/var/lib/postgresql/data"
     environment: 
-      - POSTGRES_DB=nocodb
       - POSTGRES_PASSWORD=123456
     healthcheck: 
       interval: 10s
       retries: 10
-      test: "pg_isready -U postgres -d nocodb"
-      timeout: 2s
+      test: "pg_isready -U postgres -d postgres"
+      timeout: 5s
 
   nocodb: 
     image: nocodb/nocodb:latest
@@ -31,7 +30,7 @@ services:
       - NC_PUBLIC_URL=http://nocodb.localhost
       - NC_DISABLE_TELE=true
 
-      - NC_DB=pg://nocodb-db:5432?u=postgres&p=123456&d=nocodb
+      - NC_DB=pg://nocodb-db:5432?u=postgres&p=123456&d=postgres
 
       - NC_SMTP_FROM=contato@alexandreafonso.com.br
       - NC_SMTP_HOST=smtp.sendgrid.net
