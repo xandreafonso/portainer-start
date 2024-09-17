@@ -10,7 +10,13 @@ services:
       - db-postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=meubanco
+      - POSTGRES_USER=meuusuario
       - POSTGRES_PASSWORD=minhasenha
+    healthcheck: 
+      interval: 10s
+      retries: 10
+      test: "pg_isready -U postgres -d postgres"
+      timeout: 5s
 
 volumes:
   db-postgres-data:
