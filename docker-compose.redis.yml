@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:latest
+    command: ["redis-server", "--requirepass", "kzNnHSZo2WrqT0sN"]
+    restart: always
+    networks:
+      - traefik-net
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - redis-data:/data
+    environment:
+      - REDIS_PASSWORD=kzNnHSZo2WrqT0sN
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "kzNnHSZo2WrqT0sN", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  redis-data:
+
+networks:
+  traefik-net:
+    external: true
