@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  db-qdrant:
+
+  qdrant:
     image: qdrant/qdrant
     restart: always
     networks:
@@ -11,11 +12,11 @@ services:
     environment:
       - QDRANT__SERVICE__API_KEY=93c193d2-5b52-4cd4-9e2c-b080937b79W4
     volumes:
-      - db-qdrant-data:/qdrant/storage
+      - qdrant-data:/qdrant/storage
 
 volumes:
-  db-qdrant-data:
-    name: db-qdrant-data
+  qdrant-data:
+    name: qdrant-data
 
 networks:
   traefik-net:
