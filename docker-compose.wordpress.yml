@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  wordpress-db:
+    image: mysql:5.7
+    restart: always
+    networks:
+      - traefik-net
+    volumes:
+      - wordpress-db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpressuser
+      MYSQL_PASSWORD: wordpresspassword
+
+  wordpress:
+    image: wordpress:latest
+    restart: always
+    depends_on:
+      - wordpress-db
+    networks:
+      - traefik-net
+    volumes:
+      - wordpress-data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpressuser
+      WORDPRESS_DB_PASSWORD: wordpresspassword
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wordpress.rule=Host(`wordpress.localhost`)
+      - traefik.http.routers.wordpress.entrypoints=web,websecure
+      # - traefik.http.services.wordpress.loadbalancer.server.port=80
+      # - traefik.http.routers.wordpress.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  wordpress-data:
+  wordpress-db:
+
+networks:
+  traefik-net:
+    external: true

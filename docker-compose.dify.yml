@@ -35,6 +35,9 @@ x-shared-env: &shared-env
   REDIS_PORT: 6379
   REDIS_USE_SSL: false
   REDIS_DB: 0
+  REDIS_USERNAME:
+  REDIS_PASSWORD:
+
   CELERY_BROKER_URL: redis://dify-db-kv:6379/1
 
   # STORAGE_TYPE: local
@@ -47,6 +50,13 @@ x-shared-env: &shared-env
   S3_ACCESS_KEY: ${R2_AWS_S3_ACCESS_KEY}
   S3_SECRET_KEY: ${R2_AWS_S3_SECRET_KEY}
   S3_REGION: auto
+
+  # VECTOR_STORE: qdrant
+  QDRANT_URL: http://qdrant:6333
+  QDRANT_API_KEY: difyai123456
+  QDRANT_CLIENT_TIMEOUT: 20
+  QDRANT_GRPC_ENABLED: false
+  QDRANT_GRPC_PORT: 6334
 
   VECTOR_STORE: weaviate
   WEAVIATE_ENDPOINT: http://dify-weaviate:8080
