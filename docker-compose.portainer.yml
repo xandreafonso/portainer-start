@@ -1,5 +1,3 @@
-version: "3.3"
-
 services:
   traefik:
     image: traefik
@@ -11,16 +9,21 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --api.dashboard=true
+
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --log.level=ERROR
+
+      - --log.level=INFO
+
+      # - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      # - --entrypoints.web.http.redirections.entryPoint.scheme=https
 
       # - --certificatesresolvers.letsencrypt-resolver.acme.email=afonsoaaf@gmail.com
       # - --certificatesresolvers.letsencrypt-resolver.acme.storage=/traefik/files/acme.json
       # - --certificatesresolvers.letsencrypt-resolver.acme.tlschallenge=true
-
-      # - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      # - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      # - --certificatesresolvers.letsencrypt-resolver.acme.dnschallenge=true
+      # - --certificatesresolvers.letsencrypt-resolver.acme.dnschallenge.provider=cloudflare
+      # - --certificatesresolvers.letsencrypt-resolver.acme.dnschallenge.delaybeforecheck=0
       
     ports:
       - 80:80
@@ -29,22 +32,26 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-data:/traefik/files
+    # environment:
+    #   - CLOUDFLARE_DNS_API_TOKEN=xxx
+    #   - CLOUDFLARE_ZONE_API_TOKEN=xxx
+    #   - CLOUDFLARE_EMAIL=afonsoaaf@gmail.com
+    #   - CLOUDFLARE_API_KEY=xxx
     labels:
       - traefik.enable=true
       
       - traefik.http.routers.traefik.service=api@internal
 
       - traefik.http.routers.traefik.middlewares=traefik-auth
-      - traefik.http.middlewares.traefik-auth.basicauth.users=traefik:e10adc3949ba59abbe56e057f20f883e
+      - traefik.http.middlewares.traefik-auth.basicauth.users=traefik:$$1$$zDADkWNL$$avhsuZGfDitP1JFCoagVd0
 
       - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
-      - traefik.http.routers.traefik.entrypoints=web,websecure
+      - traefik.http.routers.traefik.entrypoints=web # ,websecure
 
       # - traefik.http.routers.traefik.tls.certresolver=letsencrypt-resolver
 
   portainer:
     image: portainer/portainer-ce
-    container_name: portainer
     networks:
       - traefik-net 
     restart: always
@@ -56,7 +63,7 @@ services:
       - traefik.enable=true
       
       - traefik.http.routers.portainer.rule=Host(`portainer.localhost`)
-      - traefik.http.routers.portainer.entrypoints=web,websecure
+      - traefik.http.routers.portainer.entrypoints=web # ,websecure
       - traefik.http.services.portainer.loadbalancer.server.port=9000
       
       # - traefik.http.routers.portainer.tls.certresolver=letsencrypt-resolver
