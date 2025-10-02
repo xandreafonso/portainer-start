@@ -23,9 +23,9 @@ x-shared-env: &shared-env
   N8N_BLOCK_ENV_ACCESS_IN_NODE: false
   N8N_GIT_NODE_DISABLE_BARE_REPOS: true
 
-  WEBHOOK_URL: http://n8n-editor.localhost
+  WEBHOOK_URL: http://n8n.localhost
   N8N_SECURE_COOKIE: false
-  N8N_HOST: n8n-editor.localhost
+  N8N_HOST: n8n.localhost
   N8N_PROTOCOL: http
   N8N_PORT: 5678
 
@@ -60,7 +60,7 @@ services:
       <<: *shared-env
     labels:
       - traefik.enable=true
-      - traefik.http.routers.n8n-editor.rule=Host(`n8n-editor.localhost`)
+      - traefik.http.routers.n8n-editor.rule=Host(`n8n.localhost`)
       - traefik.http.routers.n8n-editor.entrypoints=web # ,websecure
       - traefik.http.services.n8n-editor.loadbalancer.server.port=5678
       # - traefik.http.routers.n8n-editor.tls.certresolver=letsencrypt-resolver
@@ -86,12 +86,6 @@ services:
       - n8n-webhook-data:/home/node/.n8n
     environment:
       <<: *shared-env
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.n8n-webhook.rule=Host(`n8n-webhook.localhost`)
-      - traefik.http.routers.n8n-webhook.entrypoints=web # ,websecure
-      - traefik.http.services.n8n-webhook.loadbalancer.server.port=5678
-      # - traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt-resolver
 
 volumes:
   n8n-editor-data:
