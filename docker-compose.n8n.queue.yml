@@ -6,33 +6,39 @@ x-shared-env: &shared-env
   DB_POSTGRESDB_USER: postgres
   DB_POSTGRESDB_PASSWORD: n8n_password
 
+  EXECUTIONS_MODE: queue
+
+  OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: true
+  N8N_DISABLE_PRODUCTION_MAIN_PROCESS: true
+
   N8N_RUNNERS_ENABLED: true
   N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: true
 
   QUEUE_BULL_REDIS_HOST: n8n-redis
   QUEUE_BULL_REDIS_PORT: 6379
 
-  EXECUTIONS_MODE: queue
-  OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: true
-
+  N8N_EDITOR_BASE_URL: http://n8n-editor.localhost
+  WEBHOOK_URL: http://n8n-webhook.localhost
+  N8N_SECURE_COOKIE: false
+  N8N_HOST: n8n.localhost
+  N8N_PROTOCOL: http
+  N8N_PORT: 5678
+  N8N_PROXY_HOPS: 1
   N8N_ENCRYPTION_KEY: a3f1c9b74d2e6a8f9b0c7d2ae5f3a1b4c6d7e8f01a2b3c4d5e6f7a8b9c0d1e2f
 
   GENERIC_TIMEZONE: America/Sao_Paulo
   TZ: America/Sao_Paulo
 
   N8N_BLOCK_ENV_ACCESS_IN_NODE: false
-  N8N_GIT_NODE_DISABLE_BARE_REPOS: true
+  N8N_GIT_NODE_DISABLE_BARE_REPOS: true 
 
-  WEBHOOK_URL: http://n8n.localhost
-  N8N_SECURE_COOKIE: false
-  N8N_HOST: n8n.localhost
-  N8N_PROTOCOL: http
-  N8N_PORT: 5678
+  NODE_FUNCTION_ALLOW_BUILTIN: "*"
+  NODE_FUNCTION_ALLOW_EXTERNAL: moment,lodash
 
 services:
   n8n-postgres:
     image: ankane/pgvector
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -43,7 +49,7 @@ services:
   
   n8n-redis:
     image: redis:alpine
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -51,7 +57,7 @@ services:
 
   n8n-editor:
     image: docker.n8n.io/n8nio/n8n:latest
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -60,7 +66,7 @@ services:
       <<: *shared-env
     labels:
       - traefik.enable=true
-      - traefik.http.routers.n8n-editor.rule=Host(`n8n.localhost`)
+      - traefik.http.routers.n8n-editor.rule=Host(`n8n-editor.localhost`)
       - traefik.http.routers.n8n-editor.entrypoints=web # ,websecure
       - traefik.http.services.n8n-editor.loadbalancer.server.port=5678
       # - traefik.http.routers.n8n-editor.tls.certresolver=letsencrypt-resolver
@@ -68,7 +74,7 @@ services:
   n8n-workers:
     image: docker.n8n.io/n8nio/n8n:latest
     command: worker
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -79,13 +85,20 @@ services:
   n8n-webhook:
     image: docker.n8n.io/n8nio/n8n:latest
     command: webhook
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
       - n8n-webhook-data:/home/node/.n8n
     environment:
       <<: *shared-env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.n8n-webhook.rule=Host(`n8n-webhook.localhost`)
+      - traefik.http.routers.n8n-webhook.entrypoints=web # ,websecure
+      - traefik.http.services.n8n-webhook.loadbalancer.server.port=5678
+      # - traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt-resolver
+
 
 volumes:
   n8n-editor-data:
