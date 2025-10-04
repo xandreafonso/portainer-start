@@ -30,7 +30,7 @@ x-shared-env: &shared-env
   TZ: America/Sao_Paulo
 
   N8N_BLOCK_ENV_ACCESS_IN_NODE: false
-  N8N_GIT_NODE_DISABLE_BARE_REPOS: true 
+  N8N_GIT_NODE_DISABLE_BARE_REPOS: true
 
   NODE_FUNCTION_ALLOW_BUILTIN: "*"
   NODE_FUNCTION_ALLOW_EXTERNAL: moment,lodash
