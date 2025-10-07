@@ -69,9 +69,9 @@ services:
 
 volumes:
   traefik-data:
-    name: traefik-data
+    driver: local
   portainer-data:
-    name: portainer-data
+    driver: local
 
 networks:
   traefik-net:
