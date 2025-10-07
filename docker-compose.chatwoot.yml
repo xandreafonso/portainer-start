@@ -52,7 +52,7 @@ services:
 
   chatwoot-db:
     image: postgres
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -63,7 +63,7 @@ services:
 
   chatwoot-db-kv:
     image: redis
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -76,10 +76,7 @@ services:
 
   chatwoot: # bundle exec rails db:chatwoot_prepare # https://www.chatwoot.com/docs/self-hosted/deployment/docker
     image: chatwoot/chatwoot:latest
-    restart: always
-    depends_on:
-      - chatwoot-db
-      - chatwoot-db-kv
+    restart: unless-stopped
     command: bundle exec rails s -p 3000 -b 0.0.0.0
     entrypoint: docker/entrypoints/rails.sh
     volumes:
@@ -88,19 +85,19 @@ services:
       - traefik-net
     environment:
       <<: *shared-env
+    depends_on:
+      - chatwoot-db
+      - chatwoot-db-kv
     labels:
       - traefik.enable=true
       - traefik.http.routers.chatwoot.rule=Host(`chatwoot.localhost`)
-      - traefik.http.routers.chatwoot.entrypoints=web,websecure
+      - traefik.http.routers.chatwoot.entrypoints=web # ,websecure
       - traefik.http.services.chatwoot.loadbalancer.server.port=3000
       # - traefik.http.routers.chatwoot.tls.certresolver=letsencryptresolver
 
   chatwoot-worker:
     image: chatwoot/chatwoot:latest
-    restart: always
-    depends_on:
-      - chatwoot-db
-      - chatwoot-db-kv
+    restart: unless-stopped
     command: bundle exec sidekiq -C config/sidekiq.yml
     volumes:
       - chatwoot-data:/app/storage
@@ -108,6 +105,9 @@ services:
       - traefik-net
     environment:
       <<: *shared-env
+    depends_on:
+      - chatwoot-db
+      - chatwoot-db-kv
 
 volumes:
   chatwoot-data:

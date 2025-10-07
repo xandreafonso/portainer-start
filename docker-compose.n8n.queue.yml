@@ -1,4 +1,6 @@
 x-shared-env: &shared-env
+  # https://docs.n8n.io/hosting/configuration/environment-variables/
+
   DB_TYPE: postgresdb
   DB_POSTGRESDB_HOST: n8n-postgres
   DB_POSTGRESDB_PORT: 5432
@@ -9,10 +11,10 @@ x-shared-env: &shared-env
   EXECUTIONS_MODE: queue
 
   OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: true
-  N8N_DISABLE_PRODUCTION_MAIN_PROCESS: true
+  N8N_DISABLE_PRODUCTION_MAIN_PROCESS: true # true quer dizer que o Editor não poderá executar o workflow. As execuções sempre serão feitas nos workers.
 
   N8N_RUNNERS_ENABLED: true
-  N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: true
+  N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: true # Set to true to try to set 0600 permissions for the settings file, giving only the owner read and write access
 
   QUEUE_BULL_REDIS_HOST: n8n-redis
   QUEUE_BULL_REDIS_PORT: 6379
@@ -29,8 +31,8 @@ x-shared-env: &shared-env
   GENERIC_TIMEZONE: America/Sao_Paulo
   TZ: America/Sao_Paulo
 
-  N8N_BLOCK_ENV_ACCESS_IN_NODE: false
-  N8N_GIT_NODE_DISABLE_BARE_REPOS: true
+  N8N_BLOCK_ENV_ACCESS_IN_NODE: false # O log tinha uma instrução para adicionar essa var.
+  N8N_GIT_NODE_DISABLE_BARE_REPOS: true # O log tinha uma instrução para adicionar essa var.
 
   NODE_FUNCTION_ALLOW_BUILTIN: "*"
   NODE_FUNCTION_ALLOW_EXTERNAL: moment,lodash
@@ -46,6 +48,12 @@ services:
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=n8n_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB}"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
+      retries: 10
   
   n8n-redis:
     image: redis:alpine
@@ -54,6 +62,13 @@ services:
       - traefik-net
     volumes:
       - n8n-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   n8n-editor:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -64,6 +79,9 @@ services:
       - n8n-editor-data:/home/node/.n8n
     environment:
       <<: *shared-env
+    depends_on:
+      - n8n-postgres
+      - n8n-redis
     labels:
       - traefik.enable=true
       - traefik.http.routers.n8n-editor.rule=Host(`n8n-editor.localhost`)
@@ -81,6 +99,9 @@ services:
       - n8n-workers-data:/home/node/.n8n
     environment:
       <<: *shared-env
+    depends_on:
+      - n8n-postgres
+      - n8n-redis
 
   n8n-webhook:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -92,6 +113,9 @@ services:
       - n8n-webhook-data:/home/node/.n8n
     environment:
       <<: *shared-env
+    depends_on:
+      - n8n-postgres
+      - n8n-redis
     labels:
       - traefik.enable=true
       - traefik.http.routers.n8n-webhook.rule=Host(`n8n-webhook.localhost`)

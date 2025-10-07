@@ -4,7 +4,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     ports:
@@ -13,6 +13,12 @@ services:
       - QDRANT__SERVICE__API_KEY=93c193d2-5b52-4cd4-9e2c-b080937b79W4
     volumes:
       - qdrant-data:/qdrant/storage
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.qdrant.rule=Host(`qdrant.localhost`)
+      - traefik.http.routers.qdrant.entrypoints=web # ,websecure
+      - traefik.http.services.qdrant.loadbalancer.server.port=6333
+      # - traefik.http.routers.qdrant.tls.certresolver=letsencrypt-resolver
 
 volumes:
   qdrant-data:

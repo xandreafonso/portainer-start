@@ -3,7 +3,7 @@ version: '3.3'
 services:
   evolution-db:
     image: postgres:15
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     command: ["postgres", "-c", "max_connections=1000"]
@@ -15,7 +15,7 @@ services:
     
   evolution-rabbitmq:
     image: rabbitmq:management
-    restart: always
+    restart: unless-stopped
     environment:
       - RABBITMQ_ERLANG_COOKIE=33H2CdkzF5WrnJ4ud6nkUdRTKXvbCHeFjvVL71p
       - RABBITMQ_DEFAULT_VHOST=default
@@ -28,7 +28,7 @@ services:
 
   evolution-db-kv:
     image: redis:latest
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     command: >
@@ -38,7 +38,7 @@ services:
     
   evolution_v2:
     image: atendai/evolution-api:v2.0.10
-    restart: always
+    restart: unless-stopped
     volumes:
       - evolution_v2-data:/evolution/instances
     networks:
@@ -170,7 +170,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.evolution_v2.rule=Host(`evolution.localhost`)
-      - traefik.http.routers.evolution_v2.entrypoints=web,websecure
+      - traefik.http.routers.evolution_v2.entrypoints=web # ,websecure
       - traefik.http.services.evolution_v2.loadbalancer.server.port=8080
       - traefik.http.services.evolution_v2.loadbalancer.passHostHeader=true
       # - traefik.http.routers.evolution_v2.tls.certresolver=letsencrypt-resolver

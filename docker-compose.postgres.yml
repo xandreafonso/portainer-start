@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db-postgres:
     image: postgres
-    restart: always
+    restart: unless-stopped
     networks:
       - traefik-net
     volumes:
@@ -13,10 +13,11 @@ services:
       - POSTGRES_USER=meuusuario
       - POSTGRES_PASSWORD=minhasenha
     healthcheck: 
-      interval: 10s
-      retries: 10
       test: "pg_isready -U postgres -d postgres"
+      start_period: 5s
+      interval: 10s
       timeout: 5s
+      retries: 10
 
 volumes:
   db-postgres-data:
