@@ -68,7 +68,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 10s
 
   n8n-editor:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -126,15 +125,15 @@ services:
 
 volumes:
   n8n-editor-data:
-    name: n8n-editor-data
+    driver: local
   n8n-workers-data:
-    name: n8n-workers-data
+    driver: local
   n8n-webhook-data:
-    name: n8n-webhook-data
+    driver: local
   n8n-postgres-data:
-    name: n8n-postgres-data
+    driver: local
   n8n-redis-data:
-    name: n8n-redis-data
+    driver: local
 
 networks:
   traefik-net:

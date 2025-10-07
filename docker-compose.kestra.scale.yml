@@ -1,0 +1,118 @@
+x-shared-env: &shared-env
+  KESTRA_CONFIGURATION: |
+    kestra:
+      tutorialFlows:
+        enabled: false
+      repository:
+        type: postgres
+      storage:
+        type: local
+        local:
+          basePath: "/app/storage"
+      queue:
+        type: postgres
+      url: http://kestra-webserver.localhost/
+    datasources:
+      postgres:
+        url: jdbc:postgresql://kestra-postgres:5432/kestra
+        driverClassName: org.postgresql.Driver
+        username: kestra
+        password: k3str4
+
+services:
+
+  kestra-postgres:
+    image: postgres
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - kestra-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: kestra
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: k3str4
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  kestra-webserver:
+    image: kestra/kestra:latest
+    user: "root"
+    command: ["server", "webserver"] # command: server standalone
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      <<: *shared-env
+    depends_on:
+      - kestra-postgres
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kestra-webserver.rule=Host(`kestra-webserver.localhost`)
+      - traefik.http.routers.kestra-webserver.entrypoints=web
+      - traefik.http.services.kestra-webserver.loadbalancer.server.port=8080
+
+  kestra-scheduler:
+    image: kestra/kestra:latest
+    command: ["server", "scheduler"]
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      <<: *shared-env
+    depends_on:
+      - kestra-postgres
+      - kestra-webserver
+
+  kestra-executor:
+    image: kestra/kestra:latest
+    command: ["server", "executor"]
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      <<: *shared-env
+    depends_on:
+      - kestra-postgres
+      - kestra-webserver
+
+  kestra-worker:
+    image: kestra/kestra:latest
+    command: ["server", "worker"]
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - kestra-data:/app/storage
+      - kestra-tmp-data:/tmp/kestra-wd
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      <<: *shared-env
+    depends_on:
+      - kestra-postgres
+      - kestra-webserver
+
+volumes:
+  kestra-postgres-data:
+    driver: local
+  kestra-data:
+    driver: local
+  kestra-tmp-data:
+    driver: local
+
+networks:
+  traefik-net:
+    external: true
