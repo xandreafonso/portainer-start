@@ -1,0 +1,143 @@
+# NÃO CHEGUEI A TESTAR ESSA VERSÃO
+
+x-shared-env: &shared-env
+  POSTGRES_HOSTNAME: briefer-postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_DATABASE: briefer
+  POSTGRES_USERNAME: postgres
+  POSTGRES_PASSWORD: briefer_password
+
+services:
+
+  briefer-postgres:
+    image: pgvector/pgvector
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - briefer-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=briefer
+      - POSTGRES_PASSWORD=briefer_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB}"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  briefer-migration:
+    image: briefercloud/briefer-api
+    networks:
+      - traefik-net
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      <<: *shared-env
+      NODE_ENV: 'production'
+      POSTGRES_PRISMA_URL: 'postgresql://${POSTGRES_USERNAME:?error}:${POSTGRES_PASSWORD:?error}@postgres:5432/briefer?schema=public'
+    depends_on:
+      - briefer-postgres
+
+  briefer-jupyter-server:
+    image: briefercloud/briefer-jupyter
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    command:
+      - 'sh'
+      - '-c'
+      - 'jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400'
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
+    volumes:
+      - briefer-jupyter-server-data:/home/jupyteruser
+    labels:
+      - cloud.briefer.jupyter-container=true
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  briefer-ai:
+    image: briefercloud/briefer-ai
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    environment:
+      - BASIC_AUTH_USERNAME=${AI_BASIC_AUTH_USERNAME:?error}
+      - BASIC_AUTH_PASSWORD=${AI_BASIC_AUTH_PASSWORD:?error}
+      - OPENAI_DEFAULT_MODEL_NAME=gpt-4o
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?error}
+      - PORT=8000
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8000/ping || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  briefer-web:
+    image: briefercloud/briefer-web
+    networks:
+      - traefik-net
+    environment:
+      NODE_ENV: 'production'
+    depends_on:
+      - api
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.briefer-web.rule=Host(`briefer.localhost`) && Path(`/`)
+      - traefik.http.routers.briefer-web.entrypoints=web
+      - traefik.http.services.briefer-web.loadbalancer.server.port=3000
+
+  briefer-api:
+    image: briefercloud/briefer-api
+    networks:
+      - traefik-net
+    environment:
+      NODE_ENV: 'production'
+      LOG_LEVEL: 'debug'
+      API_URL: '/api'
+      FRONTEND_URL: '/'
+      LOGIN_JWT_SECRET: ${LOGIN_JWT_SECRET:?error}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?error}
+      AI_API_URL: 'http://briefer-ai:8000'
+      AI_API_USERNAME: ${AI_BASIC_AUTH_USERNAME:?error}
+      AI_API_PASSWORD: ${AI_BASIC_AUTH_PASSWORD:?error}
+      PYTHON_ALLOWED_LIBRARIES: 'plotly,matplotlib,numpy,pandas'
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:?error}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error}
+      POSTGRES_HOSTNAME: 'postgres'
+      POSTGRES_PORT: '5432'
+      POSTGRES_DATABASE: 'briefer'
+      ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: ${ENVIRONMENT_VARIABLES_ENCRYPTION_KEY:?error}
+      WORKSPACE_SECRETS_ENCRYPTION_KEY: ${WORKSPACE_SECRETS_ENCRYPTION_KEY:?error}
+      DATASOURCES_ENCRYPTION_KEY: ${DATASOURCES_ENCRYPTION_KEY:?error}
+      JUPYTER_HOST: 'briefer-jupyter-server'
+      JUPYTER_PORT: 8888
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
+    depends_on:
+      - briefer-postgres
+      - briefer-migration
+      - briefer-jupyter-server
+      - briefer-ai 
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8080/readyz || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.briefer-api.rule=Host(`briefer.localhost`) && Path(`/api`)
+      - traefik.http.routers.briefer-api.entrypoints=web
+      - traefik.http.services.briefer-api.loadbalancer.server.port=8080
+
+volumes:
+  briefer-postgres-data:
+    driver: local
+  briefer-jupyter-server-data:
+    driver: local
+
+networks:
+  traefik-net:
+    external: true
