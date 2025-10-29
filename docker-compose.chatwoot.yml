@@ -1,5 +1,3 @@
-version: "3.8"
-
 x-shared-env: &shared-env
   RAILS_ENV: production
   INSTALLATION_ENV: docker
@@ -21,12 +19,12 @@ x-shared-env: &shared-env
   POSTGRES_DATABASE: chatwoot
 
   ACTIVE_STORAGE_SERVICE: amazon
-  S3_BUCKET_NAME: s3.chatwoot.alexandreafonso.com.br
-  AWS_ACCESS_KEY_ID: ${R2_AWS_S3_ACCESS_KEY}
-  AWS_SECRET_ACCESS_KEY: ${R2_AWS_S3_SECRET_KEY}
+  S3_BUCKET_NAME: s3.dev.alexandreafonso.com.br
+  AWS_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY}
+  AWS_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_KEY}
   AWS_REGION: auto
 
-  MAILER_SENDER_EMAIL: Alexandre <eu@alexandreafonso.com.br>
+  MAILER_SENDER_EMAIL: Alexandre <contato@alexandreafonso.com.br>
 
   SMTP_ADDRESS: smtp.sendgrid.net
   SMTP_AUTHENTICATION: plain
@@ -35,23 +33,23 @@ x-shared-env: &shared-env
   SMTP_USERNAME: apikey
   SMTP_PASSWORD: ${SENDGRID_API_KEY}
 
-  FB_VERIFY_TOKEN: 
-  FB_APP_SECRET: 
-  FB_APP_ID: 
+  FB_VERIFY_TOKEN: ${FACEBOOK_TOKEN}
+  FB_APP_SECRET: ${FACEBOOK_APP_SECRET}
+  FB_APP_ID: ${FACEBOOK_APP_ID}
 
-  GOOGLE_OAUTH_CLIENT_ID: 
-  GOOGLE_OAUTH_CLIENT_SECRET: 
-  GOOGLE_OAUTH_CALLBACK_URL: 
+  GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+  GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+  GOOGLE_OAUTH_CALLBACK_URL: ${GOOGLE_OAUTH_CALLBACK_URL}
 
-  STRIPE_SECRET_KEY: 
-  STRIPE_WEBHOOK_SECRET: 
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
 
-  OPENAI_API_KEY: 
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 services:
 
   chatwoot-db:
-    image: postgres
+    image: ankane/pgvector
     restart: unless-stopped
     networks:
       - traefik-net
@@ -74,7 +72,10 @@ services:
       - REDIS_USE_SSL=false
       - REDIS_DB=0
 
-  chatwoot: # bundle exec rails db:chatwoot_prepare # https://www.chatwoot.com/docs/self-hosted/deployment/docker
+  chatwoot: 
+    # Preparar o banco de dados https://www.chatwoot.com/docs/self-hosted/deployment/docker
+    # PELO DOCKER: docker compose run --rm chatwoot bundle exec rails db:chatwoot_prepare
+    # PELO SHELL DO CONTAINER: bundle exec rails db:chatwoot_prepare
     image: chatwoot/chatwoot:latest
     restart: unless-stopped
     command: bundle exec rails s -p 3000 -b 0.0.0.0
@@ -85,6 +86,8 @@ services:
       - traefik-net
     environment:
       <<: *shared-env
+    env_file:
+      - stack.env
     depends_on:
       - chatwoot-db
       - chatwoot-db-kv
@@ -105,6 +108,8 @@ services:
       - traefik-net
     environment:
       <<: *shared-env
+    env_file:
+      - stack.env
     depends_on:
       - chatwoot-db
       - chatwoot-db-kv
