@@ -12,7 +12,7 @@ services:
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=12345678
-      - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
+      # - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
       # - MINIO_SERVER_URL=http://minio-api.localhost
 
       # - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
