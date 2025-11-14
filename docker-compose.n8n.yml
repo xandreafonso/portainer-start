@@ -57,9 +57,9 @@ services:
 
 volumes:
   n8n-data:
-    name: n8n-data
+    driver: local
   n8n-db-data:
-    name: n8n-db-data
+    driver: local
 
 networks:
   traefik-net:
