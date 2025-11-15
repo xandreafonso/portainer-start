@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   n8n-db:
-    image: postgres
+    image: pgvector/pgvector:pg18
     restart: unless-stopped
     networks:
       - traefik-net
@@ -19,7 +17,7 @@ services:
       retries: 10
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: docker.n8n.io/n8nio/n8n:1.119.2
     restart: unless-stopped
     networks:
       - traefik-net
