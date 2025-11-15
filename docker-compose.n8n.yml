@@ -7,7 +7,7 @@ services:
     networks:
       - traefik-net
     volumes:
-      - n8n-db-data:/var/lib/postgresql/data
+      - n8n-db-data:/var/lib/postgresql
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=n8n_password
