@@ -1,0 +1,29 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4.1.0-management
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    # ports:
+    #   - "5672:5672"       # RabbitMQ default port
+    #   - "15672:15672"     # RabbitMQ management UI port
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=k2NnywSZo7XrqT0sN
+    labels:
+      - traefik.enable=true
+
+      - traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.localhost`)
+      - traefik.http.routers.rabbitmq.entrypoints=web # ,websecure
+      - traefik.http.services.rabbitmq.loadbalancer.server.port=15672
+      # - traefik.http.routers.rabbitmq.tls.certresolver=letsencrypt-resolver
+
+volumes:
+  rabbitmq-data:
+    driver: local
+
+networks:
+  traefik-net:
+    external: true
