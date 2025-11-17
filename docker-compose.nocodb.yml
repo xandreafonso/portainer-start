@@ -1,52 +1,77 @@
-version: "3.7"
+x-nocodb-env: &nocodb-env
+  NC_PUBLIC_URL: http://nocodb.localhost
+  
+  NC_DB: pg://nocodb-postgres:5432?u=postgres&p=nocodb_password&d=nocodb
+  NC_REDIS_URL: redis://nocodb-redis:6379/0
 
-services: 
+  NC_S3_ACCESS_KEY: 
+  NC_S3_SECRET_KEY: 
+  NC_S3_REGION: auto
+  NC_S3_ENDPOINT: 
+  NC_S3_FORCE_PATH_STYLE: true
+  NC_S3_BUCKET_NAME: 
 
-  nocodb-db: 
-    image: postgres
-    restart: always
-    networks: 
+  NC_SMTP_FROM: contato@alexandreafonso.com.br
+  NC_SMTP_HOST: smtp.mailersend.net
+  NC_SMTP_PORT: 587
+  NC_SMTP_USERNAME: xxx
+  NC_SMTP_PASSWORD: xxx  
+
+services:
+
+  nocodb-postgres:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    networks:
       - traefik-net
-    volumes: 
-      - "nocodb-db-data:/var/lib/postgresql/data"
-    environment: 
-      - POSTGRES_PASSWORD=123456
-    healthcheck: 
-      interval: 10s
+    volumes:
+      - nocodb-postgres-data:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=nocodb
+      - POSTGRES_PASSWORD=nocodb_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB}"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
       retries: 10
-      test: "pg_isready -U postgres -d postgres"
-      timeout: 5s
+
+  nocodb-redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - nocodb-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   nocodb: 
-    image: nocodb/nocodb:latest
-    restart: always
-    depends_on: 
-      - nocodb-db
+    image: nocodb/nocodb:0.265.1
+    restart: unless-stopped
     networks: 
       - traefik-net
     volumes: 
       - nocodb-data:/usr/app/data
     environment: 
-      - NC_PUBLIC_URL=http://nocodb.localhost
-      - NC_DISABLE_TELE=true
-
-      - NC_DB=pg://nocodb-db:5432?u=postgres&p=123456&d=postgres
-
-      - NC_SMTP_FROM=contato@alexandreafonso.com.br
-      - NC_SMTP_HOST=smtp.sendgrid.net
-      - NC_SMTP_USERNAME=apikey
-      - NC_SMTP_PASSWORD=${SENDGRID_API_KEY}
-      - NC_SMTP_PORT=587
+      <<: *nocodb-env  
     labels: 
       - traefik.enable=true
       - traefik.http.routers.nocodb.rule=Host(`nocodb.localhost`)
-      - traefik.http.routers.nocodb.entrypoints=web,websecure
+      - traefik.http.routers.nocodb.entrypoints=web # ,websecure
       - traefik.http.services.nocodb.loadbalancer.server.port=8080
       # - traefik.http.routers.nocodb.tls.certresolver=letsencrypt-resolver
+    depends_on: 
+      - nocodb-postgres
+      - nocodb-redis
 
   watchtower: 
-    image: containrrr/watchtower
-    restart: always
+    image: containrrr/watchtower:1.7.1
+    restart: unless-stopped
     command: "--schedule \"0 5 * * *\" --cleanup --label-enable"
     networks: 
       - traefik-net
@@ -55,12 +80,13 @@ services:
     labels: 
       - com.centurylinklabs.watchtower.enable=true
 
-
 volumes: 
-  nocodb-db-data: 
-    name: nocodb-db-data
+  nocodb-postgres-data: 
+    driver: local
+  nocodb-redis-data:
+    driver: local
   nocodb-data:
-    name: nocodb-data
+    driver: local
 
 networks: 
   traefik-net: 
