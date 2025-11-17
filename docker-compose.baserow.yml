@@ -102,7 +102,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.baserow.rule=Host(`baserow.localhost`)
       - traefik.http.routers.baserow.entrypoints=web # ,websecure
-      # - traefik.http.services.baserow.loadbalancer.server.port=80
+      # - traefik.http.services.baserow.loadbalancer.server.port=3000
       # - traefik.http.routers.baserow.tls.certresolver=letsencrypt-resolver
     depends_on:
       - baserow-backend
