@@ -2,14 +2,14 @@ version: "3"
 
 services:
 
-  nocobase-db:
-    image: postgres
+  nocobase-postgres:
+    image: postgres:18
     restart: always
     command: postgres -c wal_level=logical
     environment:
       POSTGRES_PASSWORD: nocobase
     volumes:
-      - nocobase-db-data:/var/lib/postgresql/data
+      - nocobase-postgres-data:/var/lib/postgresql
     networks:
       - traefik-net
 
@@ -44,10 +44,10 @@ services:
     
 
 volumes:
-  nocobase-db-data:
-    name: nocobase-db-data
+  nocobase-postgres-data:
+    driver: local
   nocobase-data:
-    name: nocobase-data
+    driver: local
 
 networks:
   traefik-net:
