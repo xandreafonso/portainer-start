@@ -1,4 +1,4 @@
-x-shared-env: &shared-env
+x-baserow-shared-env: &baserow-shared-env
   BASEROW_TRIGGER_SYNC_TEMPLATES_AFTER_MIGRATION: false # Relacionado a baserow-celery-export-worker. Definir como "true" fará com que o Baserow sincronize os templates de banco de dados padrão após cada migração. Isso pode ser útil para garantir que os templates estejam atualizados, mas pode causar atrasos na inicialização se houver muitas migrações pendentes. Definir como "false" evita esse atraso, mas os templates podem não estar atualizados automaticamente.
 
   SECRET_KEY: change_me_to_a_random_secret_key
@@ -72,7 +72,7 @@ services:
     volumes:
       - baserow-media-data:/baserow/media
     environment:
-      <<: *shared-env
+      <<: *baserow-shared-env
     labels:
       - traefik.enable=true
       - traefik.http.routers.api-baserow.rule=Host(`api-baserow.localhost`)
@@ -111,7 +111,7 @@ services:
     volumes:
       - baserow-media-data:/baserow/media
     environment:
-      <<: *shared-env
+      <<: *baserow-shared-env
     healthcheck:
       test:
         [
@@ -130,7 +130,7 @@ services:
   #   volumes:
   #     - baserow-media-data:/baserow/media
   #   environment:
-  #     <<: *shared-env
+  #     <<: *baserow-shared-env
   #   healthcheck:
   #     test:
   #       [
@@ -149,7 +149,7 @@ services:
   #   volumes:
   #     - baserow-media-data:/baserow/media
   #   environment:
-  #     <<: *shared-env
+  #     <<: *baserow-shared-env
   #   # healthcheck: # não está no docker-compose oficial do baserow
   #   #   test:
   #   #     [
