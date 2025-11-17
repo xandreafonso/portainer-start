@@ -71,6 +71,7 @@ services:
 
   n8n-editor:
     image: docker.n8n.io/n8nio/n8n:latest
+    command: start
     restart: unless-stopped
     networks:
       - traefik-net
