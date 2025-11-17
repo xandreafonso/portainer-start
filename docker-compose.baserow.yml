@@ -78,10 +78,10 @@ services:
       <<: *shared-env
     labels:
       - traefik.enable=true
-      - traefik.http.routers.baserow.rule=Host(`api-baserow.localhost`)
-      - traefik.http.routers.baserow.entrypoints=web # ,websecure
-      # - traefik.http.services.baserow.loadbalancer.server.port=8000
-      # - traefik.http.routers.baserow.tls.certresolver=letsencrypt-resolver
+      - traefik.http.routers.api-baserow.rule=Host(`api-baserow.localhost`)
+      - traefik.http.routers.api-baserow.entrypoints=web # ,websecure
+      # - traefik.http.services.api-baserow.loadbalancer.server.port=8000
+      # - traefik.http.routers.api-baserow.tls.certresolver=letsencrypt-resolver
     depends_on:
       - baserow-postgres
       - baserow-redis
@@ -91,8 +91,6 @@ services:
     restart: unless-stopped
     networks:
       - traefik-net
-    volumes:
-      - baserow-media-data:/baserow/media
     environment:
       - BASEROW_PUBLIC_URL=
       - PUBLIC_BACKEND_URL=http://api-baserow.localhost
@@ -136,6 +134,7 @@ services:
       - baserow-media-data:/baserow/media
     environment:
       <<: *shared-env
+      BASEROW_TRIGGER_SYNC_TEMPLATES_AFTER_MIGRATION: false
     healthcheck:
       test:
         [
