@@ -223,7 +223,7 @@ services:
       # - traefik.http.routers.triggerdev-registry.tls.certresolver=letsencrypt-resolver
 
   triggerdev-minio:
-    image: quay.io/minio/minio:latest
+    image: minio/minio:latest
     command: server /data --address ":9000" --console-address ":9001"
     restart: unless-stopped
     networks:
@@ -260,14 +260,14 @@ services:
       # - traefik.http.routers.triggerdev-minio-console.tls.certresolver=letsencrypt-resolver
 
   triggerdev-minio-createbuckets:
-    image: quay.io/minio/mc:latest
+    image: minio/mc:latest
     networks:
       - traefik-net
     entrypoint: >
       /bin/sh -c "
       sleep 10;
-      /usr/bin/mc config host add minio http://triggerdev-minio:9000 admin very-safe-password;
-      /usr/bin/mc mb minio/packets;
+      /usr/bin/mc alias set minio http://triggerdev-minio:9000 minio very-safe-password;
+      /usr/bin/mc mb --ignore-existing minio/packets;
       /usr/bin/mc anonymous set public minio/packets/public;
       exit 0;
       "
