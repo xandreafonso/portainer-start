@@ -88,8 +88,8 @@ services:
     restart: unless-stopped
     networks:
       - traefik-net
-    # ports:
-    #   - 8030:3000 # ou 127.0.0.1 triggerdev.localhost no hosts
+    ports:
+      - 8030:3000 # ou 127.0.0.1 triggerdev.localhost no hosts
     volumes:
       - triggerdev-data:/home/node/shared
     environment:
@@ -97,9 +97,9 @@ services:
       INTERNAL_OTEL_TRACE_LOGGING_ENABLED: 0
       DEV_OTEL_EXPORTER_OTLP_ENDPOINT: http://triggerdev-webapp:3000/otel
 
-      APP_ORIGIN: http://triggerdev.localhost
-      LOGIN_ORIGIN: http://triggerdev.localhost
-      API_ORIGIN: http://triggerdev.localhost
+      APP_ORIGIN:  https://written-pavilion-pulled-suited.trycloudflare.com # http://triggerdev.localhost
+      LOGIN_ORIGIN:  https://written-pavilion-pulled-suited.trycloudflare.com # http://triggerdev.localhost
+      API_ORIGIN:  https://written-pavilion-pulled-suited.trycloudflare.com # http://triggerdev.localhost
       ELECTRIC_ORIGIN: http://triggerdev-electric:3000
 
       DATABASE_URL: postgresql://postgres:postgres@triggerdev-postgres:5432/triggerdev?schema=public&sslmode=disable
@@ -119,8 +119,8 @@ services:
       MANAGED_WORKER_SECRET: 447c29678f9eaf289e9c4b70d3dd8a7f
       
       DEPLOY_REGISTRY_NAMESPACE: trigger
-      DEPLOY_REGISTRY_HOST: triggerdev-registry.localhost
-      DOCKER_REGISTRY_URL: triggerdev-registry.localhost
+      DEPLOY_REGISTRY_HOST: contacts-legacy-demographic-expired.trycloudflare.com # triggerdev-registry.localhost
+      # DOCKER_REGISTRY_URL: contacts-legacy-demographic-expired.trycloudflare.com # triggerdev-registry.localhost
       DOCKER_REGISTRY_USERNAME: registry-user
       DOCKER_REGISTRY_PASSWORD: very-secure-indeed
 
@@ -199,8 +199,8 @@ services:
     restart: unless-stopped
     networks:
       - traefik-net
-    # ports:
-    #   - 8050:5000 # ou 127.0.0.1 triggerdev-registry.localhost no hosts. Isso é porque precisamos logar com 
+    ports:
+      - 8050:5000 # ou 127.0.0.1 triggerdev-registry.localhost no hosts. Isso é porque precisamos logar com 
     volumes:
       - triggerdev-registry-data:/auth/
     environment:
@@ -331,7 +331,7 @@ services:
       DOCKER_HOST: tcp://triggerdev-docker-proxy:2375
       DOCKER_RUNNER_NETWORKS: traefik-net
 
-      DOCKER_REGISTRY_URL: triggerdev-registry.localhost
+      DOCKER_REGISTRY_URL: contacts-legacy-demographic-expired.trycloudflare.com # triggerdev-registry.localhost
       DOCKER_REGISTRY_USERNAME: registry-user
       DOCKER_REGISTRY_PASSWORD: very-secure-indeed
 
