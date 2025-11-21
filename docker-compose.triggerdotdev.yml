@@ -88,6 +88,8 @@ services:
     restart: unless-stopped
     networks:
       - traefik-net
+    # ports:
+    #   - 8030:3000 # ou 127.0.0.1 triggerdev.localhost no hosts
     volumes:
       - triggerdev-data:/home/node/shared
     environment:
@@ -197,6 +199,8 @@ services:
     restart: unless-stopped
     networks:
       - traefik-net
+    # ports:
+    #   - 8050:5000 # ou 127.0.0.1 triggerdev-registry.localhost no hosts. Isso é porque precisamos logar com 
     volumes:
       - triggerdev-registry-data:/auth/
     environment:
