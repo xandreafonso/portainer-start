@@ -120,7 +120,6 @@ services:
       
       DEPLOY_REGISTRY_NAMESPACE: trigger
       DEPLOY_REGISTRY_HOST: contacts-legacy-demographic-expired.trycloudflare.com # triggerdev-registry.localhost
-      # DOCKER_REGISTRY_URL: contacts-legacy-demographic-expired.trycloudflare.com # triggerdev-registry.localhost
       DOCKER_REGISTRY_USERNAME: registry-user
       DOCKER_REGISTRY_PASSWORD: very-secure-indeed
 
