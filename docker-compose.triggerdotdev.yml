@@ -1,0 +1,341 @@
+# https://trigger.dev/docs/self-hosting/docker
+# https://trigger.dev/docs/self-hosting/env/webapp
+# https://github.com/triggerdotdev/trigger.dev/blob/main/hosting/docker/webapp/docker-compose.yml
+# npx trigger.dev@latest login -a http://trigger.localhost
+
+x-logging: &logging-config
+  driver: local
+  options:
+    max-size: 20m
+    max-file: 5
+    compress: "true"
+
+services:
+
+  triggerdev-postgres:
+    image: postgres:18
+    command:
+      - -c
+      - wal_level=logical
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-postgres-data:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: triggerdev
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  triggerdev-redis:
+    image: redis:8.2.3-alpine
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-redis-data:/data
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  triggerdev-clickhouse:
+    image: bitnamilegacy/clickhouse:latest
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-clickhouse-data:/bitnami/clickhouse
+    environment:
+      CLICKHOUSE_ADMIN_USER: default
+      CLICKHOUSE_ADMIN_PASSWORD: password
+    logging: *logging-config
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--host",
+          "localhost",
+          "--port",
+          "9000",
+          "--user",
+          "${CLICKHOUSE_USER:-default}",
+          "--password",
+          "${CLICKHOUSE_PASSWORD:-password}",
+          "--query",
+          "SELECT 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  triggerdev-webapp:
+    image: ghcr.io/triggerdotdev/trigger.dev:v4-beta
+    user: root # Only needed for bootstrap
+    command: sh -c "chown -R node:node /home/node/shared && exec ./scripts/entrypoint.sh" # Only needed for bootstrap
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-data:/home/node/shared
+    environment:
+      APP_LOG_LEVEL: info
+      INTERNAL_OTEL_TRACE_LOGGING_ENABLED: 0
+      DEV_OTEL_EXPORTER_OTLP_ENDPOINT: http://triggerdev-webapp:3000/otel
+
+      APP_ORIGIN: http://triggerdev.localhost
+      LOGIN_ORIGIN: http://triggerdev.localhost
+      API_ORIGIN: http://triggerdev.localhost
+      ELECTRIC_ORIGIN: http://triggerdev-electric:3000
+
+      DATABASE_URL: postgresql://postgres:postgres@triggerdev-postgres:5432/triggerdev?schema=public&sslmode=disable
+      DIRECT_URL: postgresql://postgres:postgres@triggerdev-postgres:5432/triggerdev?schema=public&sslmode=disable
+
+      REDIS_HOST: triggerdev-redis
+      REDIS_PORT: 6379
+      REDIS_TLS_DISABLED: true
+
+      OBJECT_STORE_BASE_URL: http://triggerdev-minio:9000
+      OBJECT_STORE_ACCESS_KEY_ID: admin
+      OBJECT_STORE_SECRET_ACCESS_KEY: very-safe-password
+
+      SESSION_SECRET: 2818143646516f6fffd707b36f334bbb
+      MAGIC_LINK_SECRET: 44da78b7bbb0dfe709cf38931d25dcdd
+      ENCRYPTION_KEY: f686147ab967943ebbe9ed3b496e465a
+      MANAGED_WORKER_SECRET: 447c29678f9eaf289e9c4b70d3dd8a7f
+      
+      DEPLOY_REGISTRY_NAMESPACE: trigger
+      DEPLOY_REGISTRY_HOST: triggerdev-registry.localhost
+      DOCKER_REGISTRY_URL: triggerdev-registry.localhost
+      DOCKER_REGISTRY_USERNAME: registry-user
+      DOCKER_REGISTRY_PASSWORD: very-secure-indeed
+
+      WHITELISTED_EMAILS: "afonsoaaf@gmail.com|contato@alexandreafonso.com.br"
+
+      EMAIL_TRANSPORT: resend
+      FROM_EMAIL: contato@alexandreafonso.com.br
+      REPLY_TO_EMAIL: 
+      RESEND_API_KEY: <your_resend_api_key>
+
+      GRACEFUL_SHUTDOWN_TIMEOUT: 1000
+      NODE_MAX_OLD_SPACE_SIZE: 3200
+
+      TRIGGER_BOOTSTRAP_ENABLED: 1
+      TRIGGER_BOOTSTRAP_WORKER_GROUP_NAME: bootstrap
+      TRIGGER_BOOTSTRAP_WORKER_TOKEN_PATH: /home/node/shared/worker_token
+      
+      CLICKHOUSE_URL: http://default:password@triggerdev-clickhouse:8123?secure=false
+      CLICKHOUSE_LOG_LEVEL: info
+      RUN_REPLICATION_ENABLED: 1
+      RUN_REPLICATION_CLICKHOUSE_URL: http://default:password@triggerdev-clickhouse:8123
+      RUN_REPLICATION_LOG_LEVEL: info
+    logging: *logging-config
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "http.get('http://localhost:3000/healthcheck', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - triggerdev-postgres
+      - triggerdev-redis
+      - triggerdev-clickhouse
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.triggerdev-webapp.rule=Host(`triggerdev.localhost`)
+      - traefik.http.routers.triggerdev-webapp.entrypoints=web # ,websecure
+      - traefik.http.services.triggerdev-webapp.loadbalancer.server.port=3000
+      # - traefik.http.routers.triggerdev-webapp.tls.certresolver=letsencrypt-resolver
+
+  triggerdev-electric:
+    image: electricsql/electric:1.2.4
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@triggerdev-postgres:5432/triggerdev?schema=public&sslmode=disable
+      ELECTRIC_INSECURE: true
+      ELECTRIC_USAGE_REPORTING: false
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - triggerdev-postgres
+
+  triggerdev-registry-htpasswd:
+    image: httpd:2
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "htpasswd -Bbn registry-user very-secure-indeed > /auth/htpasswd"
+    volumes:
+      - triggerdev-registry-data:/auth
+
+  triggerdev-registry:
+    image: registry:3
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-registry-data:/auth/
+    environment:
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - triggerdev-registry-htpasswd
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.triggerdev-registry.rule=Host(`triggerdev-registry.localhost`)
+      - traefik.http.routers.triggerdev-registry.entrypoints=web # ,websecure
+      - traefik.http.services.triggerdev-registry.loadbalancer.server.port=5000
+      # - traefik.http.routers.triggerdev-registry.tls.certresolver=letsencrypt-resolver
+
+  triggerdev-minio:
+    image: bitnamilegacy/minio:latest
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-minio-data:/bitnami/minio/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: very-safe-password
+      MINIO_DEFAULT_BUCKETS: packets
+      MINIO_BROWSER: "on"
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.triggerdev-minio.rule=Host(`triggerdev-minio.localhost`)
+      - traefik.http.routers.triggerdev-minio.entrypoints=web # ,websecure
+      - traefik.http.services.triggerdev-minio.loadbalancer.server.port=9000
+      # - traefik.http.routers.triggerdev-minio.tls.certresolver=letsencrypt-resolver
+
+
+
+
+
+
+
+  triggerdev-docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik-net
+    environment:
+      - LOG_LEVEL=info
+      - POST=1
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "2375"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  triggerdev-volume-permissions-fixer:
+    image: bash:4.4
+    command: chown 9999:9999 -R /home/node/shared/worker_token
+    volumes:
+      - triggerdev-data:/home/node/shared
+    networks:
+      - traefik-net
+
+  triggerdev-supervisor:
+    image: ghcr.io/triggerdotdev/supervisor:v4-beta
+    restart: unless-stopped
+    networks:
+      - traefik-net
+    volumes:
+      - triggerdev-data:/home/node/shared
+    user: root # Only needed for bootstrap
+    command: sh -c "chown -R node:node /home/node/shared && exec /usr/bin/dumb-init -- pnpm run --filter supervisor start" # Only needed for bootstrap
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://triggerdev-webapp:3000/otel
+
+      # This needs to match the token of the worker group you want to connect to
+      # TRIGGER_WORKER_TOKEN: ${TRIGGER_WORKER_TOKEN}
+      # Use the bootstrap token created by the webapp
+      TRIGGER_WORKER_TOKEN: file:///home/node/shared/worker_token
+      MANAGED_WORKER_SECRET: 447c29678f9eaf289e9c4b70d3dd8a7f
+      
+      TRIGGER_API_URL: http://triggerdev-webapp:3000
+
+      DEBUG: 1
+      ENFORCE_MACHINE_PRESETS: 1
+      TRIGGER_DEQUEUE_INTERVAL_MS: 1000
+      DOCKER_HOST: tcp://triggerdev-docker-proxy:2375
+      DOCKER_RUNNER_NETWORKS: traefik-net
+
+      DOCKER_REGISTRY_URL: triggerdev-registry.localhost
+      DOCKER_REGISTRY_USERNAME: registry-user
+      DOCKER_REGISTRY_PASSWORD: very-secure-indeed
+
+      DOCKER_AUTOREMOVE_EXITED_CONTAINERS: 0
+    logging: *logging-config
+    healthcheck:
+      test: ["CMD", "node", "-e", "http.get('http://localhost:8020/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - triggerdev-registry-htpasswd
+      - triggerdev-docker-proxy
+
+  
+
+
+
+
+volumes:
+  triggerdev-data:
+  triggerdev-postgres-data:
+  triggerdev-redis-data:
+  triggerdev-clickhouse-data:
+  triggerdev-minio-data:
+  triggerdev-registry-data:
+
+networks:
+  traefik-net:
+    external: true
