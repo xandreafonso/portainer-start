@@ -224,7 +224,8 @@ services:
       # - traefik.http.routers.triggerdev-registry.tls.certresolver=letsencrypt-resolver
 
   triggerdev-minio:
-    image: bitnamilegacy/minio:latest
+    image: quay.io/minio/minio:latest
+    command: server /data --address ":9000" --console-address ":9001"
     restart: unless-stopped
     networks:
       - traefik-net
@@ -233,8 +234,8 @@ services:
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: very-safe-password
-      MINIO_DEFAULT_BUCKETS: packets
-      MINIO_BROWSER: "on"
+      # MINIO_DEFAULT_BUCKETS: packets
+      # MINIO_BROWSER: "on"
     logging: *logging-config
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -244,16 +245,35 @@ services:
       start_period: 10s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.triggerdev-minio.rule=Host(`triggerdev-minio.localhost`)
-      - traefik.http.routers.triggerdev-minio.entrypoints=web # ,websecure
-      - traefik.http.services.triggerdev-minio.loadbalancer.server.port=9000
-      # - traefik.http.routers.triggerdev-minio.tls.certresolver=letsencrypt-resolver
+      
+      # API
+      - traefik.http.routers.triggerdev-minio-api.rule=Host(`triggerdev-minio-api.localhost`)
+      - traefik.http.routers.triggerdev-minio-api.entrypoints=web # ,websecure
+      - traefik.http.services.triggerdev-minio-api.loadbalancer.server.port=9000
+      - traefik.http.routers.triggerdev-minio-api.service=triggerdev-minio-api
+      # - traefik.http.routers.triggerdev-minio-api.tls.certresolver=letsencrypt-resolver      
 
+      # Console
+      - traefik.http.routers.triggerdev-minio-console.rule=Host(`triggerdev-minio-console.localhost`)
+      - traefik.http.routers.triggerdev-minio-console.entrypoints=web # ,websecure
+      - traefik.http.services.triggerdev-minio-console.loadbalancer.server.port=9001
+      - traefik.http.routers.triggerdev-minio-console.service=triggerdev-minio-console
+      # - traefik.http.routers.triggerdev-minio-console.tls.certresolver=letsencrypt-resolver
 
-
-
-
-
+  triggerdev-minio-createbuckets:
+    image: quay.io/minio/mc:latest
+    networks:
+      - traefik-net
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc config host add minio http://triggerdev-minio:9000 admin very-safe-password;
+      /usr/bin/mc mb minio/packets;
+      /usr/bin/mc anonymous set public minio/packets/public;
+      exit 0;
+      "
+    depends_on:
+      - triggerdev-minio
 
   triggerdev-docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
@@ -326,11 +346,6 @@ services:
     depends_on:
       - triggerdev-registry-htpasswd
       - triggerdev-docker-proxy
-
-  
-
-
-
 
 volumes:
   triggerdev-data:
