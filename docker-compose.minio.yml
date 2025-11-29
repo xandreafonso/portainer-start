@@ -2,8 +2,8 @@ version: "3.3"
 
 services:
   minio:
-    image: minio/minio
-    restart: always
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
     command: server /data --address ":9000" --console-address ":9001"
     networks:
       - traefik-net
@@ -12,12 +12,6 @@ services:
     environment:
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=12345678
-      # - MINIO_BROWSER_REDIRECT_URL=http://minio-console.localhost
-      # - MINIO_SERVER_URL=http://minio-api.localhost
-
-      # - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      # - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
-      # - MINIO_BROWSER="off"
     healthcheck:
       test: "timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1"
       interval: 30s
@@ -41,15 +35,15 @@ services:
       # - traefik.http.routers.minio-console.tls.certresolver=letsencrypt-resolver
 
   createbuckets:
-    image: minio/mc
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     networks:
       - traefik-net
     entrypoint: >
       /bin/sh -c "
       sleep 10;
       /usr/bin/mc alias set anyaliasminio http://minio:9000 minio 12345678;
-      /usr/bin/mc mb --ignore-existing anyaliasminio/typebot;
-      /usr/bin/mc anonymous set public anyaliasminio/typebot/public;
+      /usr/bin/mc mb --ignore-existing anyaliasminio/test;
+      /usr/bin/mc anonymous set public anyaliasminio/test/public;
       exit 0;
       "
     depends_on:
