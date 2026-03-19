@@ -5,12 +5,24 @@ x-shared-env: &shared-env
         enabled: false
       repository:
         type: postgres
+      queue:
+        type: postgres
       storage:
         type: local
         local:
-          basePath: "/app/storage"
-      queue:
-        type: postgres
+          basePath: "/app/storage"      
+      storage:
+        type: s3
+        s3:
+          endpoint: "<your-s3-endpoint>"
+          access-key: "<your-aws-access-key-id>"
+          secret-key: "<your-aws-secret-access-key>"
+          region: "<your-aws-region>"
+          bucket: "<your-s3-bucket-name>"
+          force-path-style: false
+      tasks:
+        tmp-dir:
+          path: /tmp/kestra-wd/tmp
       url: http://kestra.localhost/
     datasources:
       postgres:
@@ -22,12 +34,12 @@ x-shared-env: &shared-env
 services:
 
   kestra-postgres:
-    image: postgres
+    image: postgres:18
     restart: unless-stopped
     networks:
       - traefik-net
     volumes:
-      - kestra-postgres-data:/var/lib/postgresql/data
+      - kestra-postgres-data:/var/lib/postgresql
     environment:
       POSTGRES_DB: kestra
       POSTGRES_USER: kestra
@@ -43,17 +55,19 @@ services:
     image: kestra/kestra:latest
     user: "root"
     command: server standalone
+    stop_grace_period: 6m
     restart: unless-stopped
     networks:
       - traefik-net
     volumes:
       - kestra-data:/app/storage
-      - kestra-tmp-data:/tmp/kestra-wd
+      - /tmp/kestra-wd:/tmp/kestra-wd
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       <<: *shared-env
     depends_on:
-      - kestra-postgres
+      kestra-postgres:
+        condition: service_started
     labels:
       - traefik.enable=true
       - traefik.http.routers.kestra.rule=Host(`kestra.localhost`)
@@ -64,8 +78,6 @@ volumes:
   kestra-postgres-data:
     driver: local
   kestra-data:
-    driver: local
-  kestra-tmp-data:
     driver: local
 
 networks:
