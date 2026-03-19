@@ -1,3 +1,5 @@
+# https://raw.githubusercontent.com/kestra-io/kestra/develop/docker-compose.yml
+
 x-shared-env: &shared-env
   KESTRA_CONFIGURATION: |
     kestra:
@@ -10,16 +12,7 @@ x-shared-env: &shared-env
       storage:
         type: local
         local:
-          basePath: "/app/storage"      
-      storage:
-        type: s3
-        s3:
-          endpoint: "<your-s3-endpoint>"
-          access-key: "<your-aws-access-key-id>"
-          secret-key: "<your-aws-secret-access-key>"
-          region: "<your-aws-region>"
-          bucket: "<your-s3-bucket-name>"
-          force-path-style: false
+          basePath: "/app/storage"
       tasks:
         tmp-dir:
           path: /tmp/kestra-wd/tmp
